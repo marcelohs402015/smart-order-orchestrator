@@ -29,6 +29,14 @@ spring:
     username: ${DATABASE_USERNAME:postgres}
     password: ${DATABASE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
+    # HikariCP - Pool de conexões otimizado para Virtual Threads
+    # Com Virtual Threads, pool pode ser maior pois threads são leves
+    hikari:
+      maximum-pool-size: 50  # Desenvolvimento: pool menor
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   # H2 Database (para testes e desenvolvimento sem Docker)
   # Descomente para usar H2 em memória:
@@ -159,4 +167,16 @@ server:
   error:
     include-message: always
     include-binding-errors: always
+
+# ============================================================================
+# SpringDoc OpenAPI Configuration
+# ============================================================================
+# Configuração do Swagger/OpenAPI para documentação da API REST.
+# Acesso: http://localhost:8080/swagger-ui.html
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
 

@@ -1,0 +1,39 @@
+# Documentos confidenciais de preparação para entrevista
+docs/PREPARACAO-ENTREVISTA-TECNICA-ACCENTURE.md
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Build
+target/
+build/
+dist/
+*.class
+*.jar
+*.war
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite
+

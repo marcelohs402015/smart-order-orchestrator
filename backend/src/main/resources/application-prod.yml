@@ -12,12 +12,15 @@ spring:
     password: ${DATABASE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
     hikari:
-      # Pool de conexões otimizado para produção
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
+      # Pool de conexões otimizado para Virtual Threads
+      # Com Virtual Threads, muitas threads podem compartilhar conexões eficientemente
+      # Pool maior permite melhor utilização em cenários de alta concorrência
+      maximum-pool-size: 200  # Aumentado para suportar alta concorrência com Virtual Threads
+      minimum-idle: 20  # Mantém conexões prontas para picos de tráfego
+      connection-timeout: 30000  # 30 segundos para obter conexão
+      idle-timeout: 600000  # 10 minutos - fecha conexões ociosas
+      max-lifetime: 1800000  # 30 minutos - recicla conexões antigas
+      leak-detection-threshold: 60000  # Detecta vazamentos de conexão (1 minuto)
   
   jpa:
     hibernate:
@@ -54,10 +57,26 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+    metrics:
+      enabled: true
   metrics:
     export:
       prometheus:
         enabled: true
+    # Métricas específicas de Virtual Threads
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        jvm.threads.virtual: true
+    # Coleta métricas de Virtual Threads
+    enable:
+      jvm.threads.virtual: true
+      jvm.threads.live: true
+      jvm.threads.peak: true
+      http.server.requests: true
+      hikari.connections: true
 
 # Resilience4j - Configurações mais conservadoras em produção
 resilience4j:
