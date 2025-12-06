@@ -1,0 +1,82 @@
+# ============================================================================
+# Application Configuration - Production Profile
+# ============================================================================
+# Perfil de produção: configurações otimizadas e seguras
+# ============================================================================
+
+spring:
+  # PostgreSQL para produção (via variáveis de ambiente)
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/smartorder}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # Pool de conexões otimizado para produção
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate  # NUNCA usar update/create em produção
+    show-sql: false  # Desabilitar SQL em logs de produção
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+# Logging otimizado para produção
+logging:
+  level:
+    com.marcelo.orchestrator: INFO
+    org.springframework.web: WARN
+    org.hibernate: WARN
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE:./logs/smart-order-orchestrator.log}
+
+# Actuator com segurança em produção
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Resilience4j - Configurações mais conservadoras em produção
+resilience4j:
+  circuitbreaker:
+    instances:
+      paymentGateway:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        recordExceptions:
+          - java.net.ConnectException
+          - java.util.concurrent.TimeoutException
+  retry:
+    instances:
+      paymentGateway:
+        maxAttempts: 3
+        waitDuration: 2s
+        retryExceptions:
+          - java.net.ConnectException
+          - java.util.concurrent.TimeoutException
+

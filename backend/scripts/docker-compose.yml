@@ -1,0 +1,97 @@
+version: '3.8'
+
+# ============================================================================
+# Docker Compose - Smart Order Orchestrator Infrastructure
+# ============================================================================
+# Este arquivo define os serviços de infraestrutura necessários para a aplicação:
+# - PostgreSQL: Banco de dados principal
+# - (Opcional) PgAdmin: Interface web para administração do PostgreSQL
+# ============================================================================
+
+services:
+  # ==========================================================================
+  # PostgreSQL Database
+  # ==========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: smartorder-postgres
+    restart: unless-stopped
+    
+    environment:
+      # Credenciais do banco de dados
+      POSTGRES_DB: smartorder
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      
+      # Configurações de performance
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=pt_BR.UTF-8"
+    
+    ports:
+      # Porta padrão do PostgreSQL
+      - "5432:5432"
+    
+    volumes:
+      # Persistência de dados (cria pasta se não existir)
+      - postgres_data:/var/lib/postgresql/data
+      
+      # Scripts de inicialização (executados na primeira inicialização)
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    
+    healthcheck:
+      # Health check para garantir que PostgreSQL está pronto
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+    networks:
+      - smartorder-network
+
+  # ==========================================================================
+  # PgAdmin (Opcional - Interface Web para administração)
+  # ==========================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: smartorder-pgadmin
+    restart: unless-stopped
+    
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@smartorder.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    
+    ports:
+      - "5050:80"
+    
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    networks:
+      - smartorder-network
+
+# ============================================================================
+# Volumes
+# ============================================================================
+# Volumes nomeados para persistência de dados entre reinicializações
+volumes:
+  postgres_data:
+    driver: local
+    name: smartorder_postgres_data
+  
+  pgadmin_data:
+    driver: local
+    name: smartorder_pgadmin_data
+
+# ============================================================================
+# Networks
+# ============================================================================
+# Rede isolada para comunicação entre containers
+networks:
+  smartorder-network:
+    driver: bridge
+    name: smartorder-network
+
