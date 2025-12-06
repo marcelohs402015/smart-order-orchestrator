@@ -22,50 +22,28 @@
  *   └── lib/             # Configurações de bibliotecas
  * </pre>
  */
+
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Layout } from './components/Layout';
+import { DashboardPage } from './pages/DashboardPage';
+import { OrdersListPage } from './pages/OrdersListPage';
+import { CreateOrderPage } from './pages/CreateOrderPage';
+import { OrderDetailPage } from './pages/OrderDetailPage';
+
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900">
-            Smart Order Orchestrator
-          </h1>
-          <p className="mt-2 text-lg text-gray-600">
-            Sistema de orquestração de pedidos resiliente com IA
-          </p>
-        </header>
-        
-        <main className="bg-white rounded-lg shadow p-6">
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-              Frontend Configurado com Sucesso! 🚀
-            </h2>
-            <p className="text-gray-600 mb-6">
-              React + Vite + TypeScript + TailwindCSS
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-500">
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
-                React 18
-              </span>
-              <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full">
-                Vite
-              </span>
-              <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full">
-                TypeScript
-              </span>
-              <span className="px-3 py-1 bg-cyan-100 text-cyan-800 rounded-full">
-                TailwindCSS
-              </span>
-              <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full">
-                Zustand
-              </span>
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
-  )
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/orders" element={<OrdersListPage />} />
+          <Route path="/orders/create" element={<CreateOrderPage />} />
+          <Route path="/orders/:id" element={<OrderDetailPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Layout>
+    </BrowserRouter>
+  );
 }
 
-export default App
-
+export default App;

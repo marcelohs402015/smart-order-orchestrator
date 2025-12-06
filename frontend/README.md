@@ -2,6 +2,14 @@
 
 Frontend do Smart Order Orchestrator construído com React + Vite + TypeScript.
 
+## 📚 Documentação Completa
+
+- 📘 [Propósito e Integração com Backend](../docs/FRONTEND-PROPOSITO-E-INTEGRACAO.md) - Propósito do frontend, arquitetura de comunicação e integração
+- 🧪 [Testes de Jornada e Integração](../docs/FRONTEND-TESTES-JORNADA-INTEGRACAO.md) - Estratégia de testes, unitários, integração e E2E
+- 📘 [Propósito do Produto e Stack](../docs/PROPOSITO-PRODUTO-E-STACK.md) - Visão geral do projeto completo
+- 🧪 [Guia Completo de Testes (Backend)](../docs/GUIA-COMPLETO-DE-TESTES.md) - Como testar o backend
+- ☁️ [Deploy GCP - Recursos Necessários](../docs/DEPLOY-GCP-RECURSOS-NECESSARIOS.md) - Recursos e configuração para deploy
+
 ## 🚀 Stack Tecnológica
 
 - **React 18+**: Biblioteca UI moderna e performática
@@ -11,6 +19,7 @@ Frontend do Smart Order Orchestrator construído com React + Vite + TypeScript.
 - **Zustand**: State management leve e simples
 - **Axios**: Cliente HTTP para comunicação com API REST
 - **React Hook Form + Zod**: Validação de formulários type-safe
+- **React Router DOM**: Roteamento client-side
 
 ## 📦 Instalação
 
@@ -51,10 +60,15 @@ npm run format
 
 ### Variáveis de Ambiente
 
-Copie `.env.example` para `.env` e configure:
+Crie um arquivo `.env` na raiz do frontend (baseado em `.env.example`):
 
 ```env
-VITE_API_BASE_URL=http://localhost:8080
+# API Base URL
+# Em desenvolvimento, usa proxy do Vite (/api → http://localhost:8080)
+# Em produção, use a URL completa do backend
+VITE_API_BASE_URL=http://localhost:8080/api/v1
+
+# Environment
 VITE_ENV=development
 ```
 
@@ -62,9 +76,9 @@ VITE_ENV=development
 
 O Vite está configurado para fazer proxy de `/api/*` para `http://localhost:8080/*`.
 
-Exemplo:
-- Frontend: `http://localhost:5173/api/orders`
-- Backend: `http://localhost:8080/orders`
+**Exemplo:**
+- Frontend: `http://localhost:5173/api/v1/orders`
+- Backend: `http://localhost:8080/api/v1/orders`
 
 ## 📁 Estrutura de Pastas
 
@@ -72,13 +86,27 @@ Exemplo:
 frontend/
 ├── src/
 │   ├── components/     # Componentes reutilizáveis
+│   │   ├── ui/         # Componentes base (Button, Input, Card, etc)
+│   │   └── OrderCard.tsx
 │   ├── pages/          # Páginas/rotas
-│   ├── hooks/          # Custom hooks
+│   │   ├── DashboardPage.tsx
+│   │   ├── OrdersListPage.tsx
+│   │   ├── CreateOrderPage.tsx
+│   │   └── OrderDetailPage.tsx
+│   ├── hooks/          # Custom hooks (futuro)
 │   ├── store/          # Zustand stores
+│   │   └── orderStore.ts
 │   ├── services/       # Serviços de API
+│   │   └── orderService.ts
 │   ├── types/          # TypeScript types
+│   │   └── index.ts
 │   ├── utils/          # Funções utilitárias
-│   └── lib/            # Configurações
+│   │   └── index.ts
+│   ├── lib/            # Configurações de bibliotecas
+│   │   └── axios.ts
+│   ├── App.tsx         # Componente principal
+│   ├── main.tsx        # Ponto de entrada
+│   └── index.css       # Estilos globais (TailwindCSS)
 ├── public/             # Arquivos estáticos
 └── dist/              # Build de produção
 ```
@@ -87,15 +115,102 @@ frontend/
 
 O frontend consome APIs REST do backend Spring Boot:
 
-- **Base URL**: `http://localhost:8080` (desenvolvimento)
+- **Base URL**: `http://localhost:8080/api/v1` (desenvolvimento)
 - **Formato**: JSON
-- **Autenticação**: (a ser implementado)
+- **Endpoints**:
+  - `POST /api/v1/orders` - Criar pedido
+  - `GET /api/v1/orders` - Listar pedidos
+  - `GET /api/v1/orders/{id}` - Buscar pedido por ID
+  - `GET /api/v1/orders/number/{orderNumber}` - Buscar pedido por número
 
-## 📝 Próximos Passos
+## 🎨 Componentes Disponíveis
 
-1. Configurar React Router para rotas
-2. Criar componentes base (Button, Input, Card, etc.)
-3. Implementar store Zustand para state management
-4. Criar serviços de API (Axios)
-5. Implementar páginas principais (Dashboard, Checkout, etc.)
+### UI Components
+- `Button` - Botão com variantes e estados
+- `Input` - Input com label e validação
+- `Card` - Card com header/footer opcionais
+- `LoadingSpinner` - Indicador de carregamento
+- `Alert` - Mensagens de sucesso/erro/aviso
 
+### Business Components
+- `OrderCard` - Card para exibir pedido
+- `Layout` - Layout principal com navegação
+
+## 📄 Páginas
+
+- **Dashboard** (`/`) - Visão geral com estatísticas
+- **Lista de Pedidos** (`/orders`) - Lista todos os pedidos
+- **Criar Pedido** (`/orders/create`) - Formulário para criar pedido
+- **Detalhes do Pedido** (`/orders/:id`) - Detalhes completos de um pedido
+
+## 🧪 Como Testar
+
+### 1. Iniciar Backend
+
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+### 2. Iniciar Frontend
+
+```bash
+cd frontend
+npm run dev
+```
+
+### 3. Acessar
+
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8080/api/v1/orders
+- **Swagger UI**: http://localhost:8080/swagger-ui.html
+
+## 🚀 Build para Produção
+
+```bash
+# Build
+npm run build
+
+# Preview do build
+npm run preview
+```
+
+O build será gerado na pasta `dist/` e pode ser servido por qualquer servidor estático ou Cloud Storage.
+
+## 🧪 Testes
+
+### Estratégia de Testes
+
+O frontend segue a mesma estratégia de testes do backend:
+
+- **Testes Unitários:** Componentes isolados
+- **Testes de Integração:** Páginas completas
+- **Testes E2E:** Jornadas do usuário
+
+**Guia Completo:** Veja [docs/FRONTEND-TESTES-JORNADA-INTEGRACAO.md](../docs/FRONTEND-TESTES-JORNADA-INTEGRACAO.md)
+
+### Como Executar Testes
+
+```bash
+# Testes unitários e de integração
+npm run test
+
+# Testes em modo watch
+npm run test:watch
+
+# Testes com cobertura
+npm run test:coverage
+
+# Testes E2E (quando configurado)
+npm run test:e2e
+```
+
+## 📝 Próximos Passos (Futuro)
+
+1. Implementar testes unitários e de integração
+2. Configurar testes E2E (Playwright)
+3. Adicionar autenticação/autorização
+4. Implementar filtros e busca na lista de pedidos
+5. Adicionar paginação
+6. Implementar notificações em tempo real
+7. Adicionar gráficos e métricas no dashboard

@@ -2,19 +2,26 @@
 
 ## 📋 Documentos Existentes
 
-### Fases Implementadas
+### Fases Implementadas (Backend)
 1. ✅ **FASE1-FUNDACAO-ESTRUTURA.md** - Fundação e estrutura base
 2. ✅ **FASE2-CAMADA-DOMAIN.md** - Camada Domain (Core)
 3. ✅ **FASE3-CAMADA-APPLICATION.md** - Camada Application (Use Cases)
 4. ✅ **FASE4-CAMADA-INFRASTRUCTURE-PERSISTENCIA.md** - Persistência
 5. ✅ **README-ABACATEPAY.md** - Integração AbacatePay (Fase 5)
 6. ✅ **README-OPENAI.md** - Integração OpenAI (Fase 6)
-7. ✅ **GUIA-COMPLETO-DE-TESTES.md** - Guia completo de testes do projeto
+7. ✅ **GUIA-COMPLETO-DE-TESTES.md** - Guia completo de testes do backend
 8. ✅ **FASE7-SAGA-PATTERN.md** - Saga Pattern (Fase 7)
 9. ✅ **FASE8-CAMADA-PRESENTATION-REST-API.md** - REST API (Fase 8)
 10. ✅ **FASE9-VIRTUAL-THREADS-EXPLICACAO.md** - Explicação Virtual Threads
 11. ✅ **FASE9-VIRTUAL-THREADS-PERFORMANCE.md** - Performance e otimização (Fase 9)
-12. ✅ **PROPOSITO-PRODUTO-E-STACK.md** - Propósito e stack (justificativas completas)
+
+### Documentação Frontend
+12. ✅ **FRONTEND-PROPOSITO-E-INTEGRACAO.md** - Propósito do frontend e integração com backend
+13. ✅ **FRONTEND-TESTES-JORNADA-INTEGRACAO.md** - Testes de jornada e integração do frontend
+
+### Documentos Gerais
+14. ✅ **PROPOSITO-PRODUTO-E-STACK.md** - Propósito e stack (justificativas completas)
+15. ✅ **DEPLOY-GCP-RECURSOS-NECESSARIOS.md** - Recursos e configuração para deploy no GCP
 
 ## ✅ Coesão Verificada
 
@@ -210,17 +217,27 @@ Todos os documentos estão:
 ```
 docs/
 ├── PROPOSITO-PRODUTO-E-STACK.md (⭐ LEIA PRIMEIRO)
+├── DEPLOY-GCP-RECURSOS-NECESSARIOS.md (Deploy e recursos GCP)
+│
+├── Backend - Fases
 ├── FASE1-FUNDACAO-ESTRUTURA.md
 ├── FASE2-CAMADA-DOMAIN.md
 ├── FASE3-CAMADA-APPLICATION.md
 ├── FASE4-CAMADA-INFRASTRUCTURE-PERSISTENCIA.md
 ├── README-ABACATEPAY.md (Fase 5)
 ├── README-OPENAI.md (Fase 6)
-├── GUIA-COMPLETO-DE-TESTES.md (Guia geral de testes)
 ├── FASE7-SAGA-PATTERN.md
 ├── FASE8-CAMADA-PRESENTATION-REST-API.md
 ├── FASE9-VIRTUAL-THREADS-EXPLICACAO.md (Conceitos e benefícios)
 ├── FASE9-VIRTUAL-THREADS-PERFORMANCE.md (Otimização e métricas)
+│
+├── Frontend
+├── FRONTEND-PROPOSITO-E-INTEGRACAO.md (Propósito e integração)
+├── FRONTEND-TESTES-JORNADA-INTEGRACAO.md (Testes frontend)
+│
+├── Testes
+├── GUIA-COMPLETO-DE-TESTES.md (Guia geral de testes backend)
+│
 └── REVISAO-COESAO-DOCUMENTOS.md (este documento)
 ```
 
