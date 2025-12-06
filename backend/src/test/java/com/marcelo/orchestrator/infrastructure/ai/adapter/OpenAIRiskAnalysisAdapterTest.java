@@ -92,7 +92,7 @@ class OpenAIRiskAnalysisAdapterTest {
         // Mock WebClient chain
         when(openAIWebClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.bodyValue(any())).thenReturn(requestBodySpec);
+        doReturn(requestBodySpec).when(requestBodySpec).bodyValue(any());
         when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(OpenAIResponse.class))
             .thenReturn(Mono.just(response));
@@ -121,7 +121,7 @@ class OpenAIRiskAnalysisAdapterTest {
         // Mock WebClient chain
         when(openAIWebClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.bodyValue(any())).thenReturn(requestBodySpec);
+        doReturn(requestBodySpec).when(requestBodySpec).bodyValue(any());
         when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(OpenAIResponse.class))
             .thenReturn(Mono.just(response));
@@ -144,7 +144,7 @@ class OpenAIRiskAnalysisAdapterTest {
         
         when(openAIWebClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.bodyValue(any())).thenReturn(requestBodySpec);
+        doReturn(requestBodySpec).when(requestBodySpec).bodyValue(any());
         when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(OpenAIResponse.class))
             .thenReturn(Mono.error(exception));
@@ -174,7 +174,7 @@ class OpenAIRiskAnalysisAdapterTest {
         // Mock WebClient chain
         when(openAIWebClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.bodyValue(any())).thenReturn(requestBodySpec);
+        doReturn(requestBodySpec).when(requestBodySpec).bodyValue(any());
         when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(OpenAIResponse.class))
             .thenReturn(Mono.just(response));

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-12-06T15:51:29-0300",
+    date = "2025-12-06T16:48:19-0300",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.8 (Oracle Corporation)"
 )
 @Component
@@ -34,31 +34,6 @@ public class OrderMapperImpl implements OrderMapper {
         orderEntity.updatedAt( order.getUpdatedAt() );
 
         return orderEntity.build();
-    }
-
-    @Override
-    public Order toDomain(OrderEntity entity) {
-        if ( entity == null ) {
-            return null;
-        }
-
-        Order.OrderBuilder order = Order.builder();
-
-        order.id( entity.getId() );
-        order.orderNumber( entity.getOrderNumber() );
-        order.status( entity.getStatus() );
-        order.customerId( entity.getCustomerId() );
-        order.customerName( entity.getCustomerName() );
-        order.customerEmail( entity.getCustomerEmail() );
-        order.totalAmount( entity.getTotalAmount() );
-        order.paymentId( entity.getPaymentId() );
-        order.riskLevel( entity.getRiskLevel() );
-        order.createdAt( entity.getCreatedAt() );
-        order.updatedAt( entity.getUpdatedAt() );
-
-        order.items( mapItemsToDomain(entity.getItems()) );
-
-        return order.build();
     }
 
     @Override

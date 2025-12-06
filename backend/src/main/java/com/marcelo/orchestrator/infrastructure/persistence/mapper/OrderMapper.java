@@ -1,19 +1,17 @@
 package com.marcelo.orchestrator.infrastructure.persistence.mapper;
 
-import com.marcelo.orchestrator.domain.model.Money;
 import com.marcelo.orchestrator.domain.model.Order;
 import com.marcelo.orchestrator.domain.model.OrderItem;
-import com.marcelo.orchestrator.domain.model.OrderNumber;
 import com.marcelo.orchestrator.infrastructure.persistence.entity.OrderEntity;
 import com.marcelo.orchestrator.infrastructure.persistence.entity.OrderItemEntity;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import org.mapstruct.Named;
 import org.mapstruct.factory.Mappers;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Mapper MapStruct para conversão entre Order (domínio) e OrderEntity (JPA).
@@ -62,19 +60,39 @@ public interface OrderMapper {
      */
     @AfterMapping
     default void mapItemsAfterMapping(Order order, @MappingTarget OrderEntity entity) {
-        if (order.getItems() != null) {
+        if (order != null && order.getItems() != null && !order.getItems().isEmpty()) {
             entity.setItems(mapItemsToEntity(order.getItems(), entity));
         }
     }
     
     /**
      * Converte OrderEntity (JPA) para Order (domínio).
-     * 
-     * @param entity Entidade JPA
-     * @return Entidade de domínio
+     * Como Order tem items como final, precisamos usar um método customizado completo.
      */
-    @Mapping(target = "items", expression = "java(mapItemsToDomain(entity.getItems()))")
-    Order toDomain(OrderEntity entity);
+    default Order toDomain(OrderEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        
+        List<OrderItem> items = entity.getItems() != null 
+            ? mapItemsToDomain(entity.getItems())
+            : List.of();
+        
+        return Order.builder()
+            .id(entity.getId())
+            .orderNumber(entity.getOrderNumber())
+            .status(entity.getStatus())
+            .customerId(entity.getCustomerId())
+            .customerName(entity.getCustomerName())
+            .customerEmail(entity.getCustomerEmail())
+            .items(items)
+            .totalAmount(entity.getTotalAmount())
+            .paymentId(entity.getPaymentId())
+            .riskLevel(entity.getRiskLevel())
+            .createdAt(entity.getCreatedAt())
+            .updatedAt(entity.getUpdatedAt())
+            .build();
+    }
     
     /**
      * Atualiza OrderEntity existente com dados de Order.
@@ -94,8 +112,8 @@ public interface OrderMapper {
      * @return Lista de entidades JPA
      */
     default List<OrderItemEntity> mapItemsToEntity(List<OrderItem> items, OrderEntity order) {
-        if (items == null) {
-            return null;
+        if (items == null || items.isEmpty()) {
+            return List.of();
         }
         return items.stream()
             .map(item -> OrderItemEntity.builder()
@@ -106,12 +124,18 @@ public interface OrderMapper {
                 .quantity(item.getQuantity())
                 .unitPrice(item.getUnitPrice())
                 .build())
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
     }
     
+    /**
+     * Converte lista de OrderItemEntity (JPA) para OrderItem (domínio).
+     * 
+     * @param items Lista de entidades JPA
+     * @return Lista de itens do domínio
+     */
     default List<OrderItem> mapItemsToDomain(List<OrderItemEntity> items) {
-        if (items == null) {
-            return null;
+        if (items == null || items.isEmpty()) {
+            return List.of();
         }
         return items.stream()
             .map(item -> OrderItem.builder()
@@ -121,8 +145,7 @@ public interface OrderMapper {
                 .quantity(item.getQuantity())
                 .unitPrice(item.getUnitPrice())
                 .build())
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
     }
     
 }
-

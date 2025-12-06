@@ -183,7 +183,9 @@ public class OrderSagaOrchestrator {
     private void compensate(SagaExecutionEntity saga, Order order, String reason) {
         log.warn("Compensating saga {} - Reason: {}", saga.getId(), reason);
         
-        if (order != null && saga.getStatus() == SagaExecutionEntity.SagaStatus.ORDER_CREATED) {
+        // Cancelar pedido se foi criado mas pagamento falhou
+        // Verifica se pedido existe e não foi pago (independente do status da saga)
+        if (order != null && !order.isPaid()) {
             // Pedido foi criado mas pagamento falhou - cancelar pedido
             try {
                 order.updateStatus(OrderStatus.CANCELED);

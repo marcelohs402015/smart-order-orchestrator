@@ -20,7 +20,7 @@ import java.util.Set;
  * <h3>Fluxo de Estados:</h3>
  * <pre>
  * PENDING → PAID → (Análise de Risco)
- * PENDING → PAYMENT_FAILED
+ * PENDING → PAYMENT_FAILED → CANCELED (compensação via saga)
  * PENDING → CANCELED
  * </pre>
  * 
@@ -49,6 +49,7 @@ public enum OrderStatus {
     
     /**
      * Falha no processamento do pagamento.
+     * Pode transicionar para: CANCELED (compensação via saga)
      * Estado final negativo - pedido não será processado.
      */
     PAYMENT_FAILED,
@@ -65,12 +66,16 @@ public enum OrderStatus {
      * <p>Implementa a lógica de State Machine de forma centralizada.
      * Esta abordagem evita referências circulares no construtor do enum.</p>
      * 
+     * <p><strong>Nota sobre compensação:</strong> PAYMENT_FAILED pode transicionar para CANCELED
+     * para permitir compensação em sagas quando o pagamento falha.</p>
+     * 
      * @return Conjunto imutável de estados permitidos para transição
      */
     public Set<OrderStatus> getAllowedTransitions() {
         return switch (this) {
             case PENDING -> Set.of(PAID, PAYMENT_FAILED, CANCELED);
-            case PAID, PAYMENT_FAILED, CANCELED -> Set.of(); // Estados finais
+            case PAYMENT_FAILED -> Set.of(CANCELED); // Permite compensação via saga
+            case PAID, CANCELED -> Set.of(); // Estados finais
         };
     }
     

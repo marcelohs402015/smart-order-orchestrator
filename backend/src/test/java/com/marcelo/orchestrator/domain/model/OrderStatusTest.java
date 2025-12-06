@@ -46,12 +46,24 @@ class OrderStatusTest {
     }
     
     @Test
-    @DisplayName("PAYMENT_FAILED não deve permitir transições (estado final)")
-    void paymentFailedShouldNotAllowAnyTransitions() {
+    @DisplayName("PAYMENT_FAILED deve permitir transição para CANCELED (compensação via saga)")
+    void paymentFailedShouldAllowTransitionToCanceled() {
         // Act & Assert
+        assertTrue(OrderStatus.PAYMENT_FAILED.canTransitionTo(OrderStatus.CANCELED));
         assertFalse(OrderStatus.PAYMENT_FAILED.canTransitionTo(OrderStatus.PENDING));
         assertFalse(OrderStatus.PAYMENT_FAILED.canTransitionTo(OrderStatus.PAID));
-        assertTrue(OrderStatus.PAYMENT_FAILED.getAllowedTransitions().isEmpty());
+        assertEquals(1, OrderStatus.PAYMENT_FAILED.getAllowedTransitions().size());
+        assertTrue(OrderStatus.PAYMENT_FAILED.getAllowedTransitions().contains(OrderStatus.CANCELED));
+    }
+    
+    @Test
+    @DisplayName("CANCELED não deve permitir transições (estado final)")
+    void canceledShouldNotAllowAnyTransitions() {
+        // Act & Assert
+        assertFalse(OrderStatus.CANCELED.canTransitionTo(OrderStatus.PENDING));
+        assertFalse(OrderStatus.CANCELED.canTransitionTo(OrderStatus.PAID));
+        assertFalse(OrderStatus.CANCELED.canTransitionTo(OrderStatus.PAYMENT_FAILED));
+        assertTrue(OrderStatus.CANCELED.getAllowedTransitions().isEmpty());
     }
     
     @Test

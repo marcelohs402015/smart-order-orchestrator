@@ -21,7 +21,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
@@ -88,7 +88,7 @@ class AbacatePayAdapterTest {
         // Mock WebClient chain
         when(abacatePayWebClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.bodyValue(any())).thenReturn(requestBodySpec);
+        doReturn(requestBodySpec).when(requestBodySpec).bodyValue(any());
         when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(AbacatePayBillingResponse.class))
             .thenReturn(Mono.just(response));
@@ -113,7 +113,7 @@ class AbacatePayAdapterTest {
         
         when(abacatePayWebClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.bodyValue(any())).thenReturn(requestBodySpec);
+        doReturn(requestBodySpec).when(requestBodySpec).bodyValue(any());
         when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(AbacatePayBillingResponse.class))
             .thenReturn(Mono.error(exception));
