@@ -291,37 +291,140 @@ Em sistemas distribuídos, especialmente em e-commerce, é comum ter múltiplas 
 
 ---
 
-## 🚀 Stack Tecnológico
+## 🚀 Stack Tecnológico e Justificativas
 
 ### Backend
 
 - **Java 21** - Virtual Threads para alta concorrência
+  - **Por que Java 21?** LTS até 2029, Virtual Threads (Project Loom) permitem milhões de threads simultâneas com baixo consumo
+  - **Benefício:** 100.000 requisições simultâneas usando ~100MB de memória (vs ~100GB com threads tradicionais)
+  - **Alinhamento:** Accenture e clientes enterprise usam Java 21 em microserviços
+
 - **Spring Boot 3.2+** - Framework enterprise
+  - **Por que Spring Boot 3.2+?** Suporte nativo a Virtual Threads, autoconfiguração, ecosystem maduro
+  - **Benefício:** Desenvolvimento rápido com qualidade enterprise, suporte nativo a tecnologias modernas
+
 - **PostgreSQL** - Banco relacional (ACID)
+  - **Por que PostgreSQL?** ACID garante consistência, robusto, open source, excelente performance
+  - **Benefício:** Consistência garantida para dados críticos (pedidos, pagamentos)
+
 - **Resilience4j** - Circuit Breaker, Retry, Fallback
+  - **Por que Resilience4j?** Circuit Breaker protege contra falhas em cascata, Retry para falhas transitórias, Fallback para degradação graciosa
+  - **Benefício:** Sistema continua funcionando mesmo se AbacatePay ou OpenAI estiverem offline
+
 - **Flyway** - Migrations versionadas
+  - **Por que Flyway?** Versionamento de schema, reprodutibilidade, auditoria completa
+  - **Benefício:** Schema do banco versionado como código, fácil deploy em diferentes ambientes
+
 - **MapStruct** - Mapeamento type-safe
+  - **Por que MapStruct?** Type-safe, performático, geração de código em tempo de compilação
+  - **Benefício:** Mapeamento seguro entre camadas sem overhead de runtime
+
 - **Lombok** - Redução de boilerplate
+  - **Por que Lombok?** Reduz código boilerplate mantendo legibilidade
+  - **Benefício:** Código mais limpo e focado na lógica de negócio
+
 - **Swagger/OpenAPI** - Documentação automática
+  - **Por que Swagger?** Documentação automática, teste interativo, contrato de API claro
+  - **Benefício:** Documentação sempre atualizada, facilita integração
+
 - **Spring WebFlux** - WebClient reativo
+  - **Por que WebFlux?** Chamadas HTTP não-bloqueantes, ideal para Virtual Threads
+  - **Benefício:** Melhor utilização de recursos em chamadas externas
+
 - **Spring AI** - Integração com OpenAI
+  - **Por que Spring AI?** Integração simplificada com modelos de IA
+  - **Benefício:** Análise de risco inteligente, demonstra uso de IA em sistemas enterprise
+
 - **JavaParser** - Análise estática de código (MCP)
+  - **Por que JavaParser?** Análise AST para code review automatizado
+  - **Benefício:** MCP Code Review Server para análise automatizada
 
 ### Frontend
 
 - **React 18+** - Biblioteca UI moderna
+  - **Por que React?** Biblioteca madura, grande ecossistema, componentização
+  - **Benefício:** Interface moderna e responsiva
+
 - **Vite** - Build tool rápido
+  - **Por que Vite?** Build rápido, HMR eficiente, melhor DX
+  - **Benefício:** Desenvolvimento mais rápido
+
 - **TypeScript** - Type safety
+  - **Por que TypeScript?** Type safety, melhor autocomplete, menos bugs
+  - **Benefício:** Código mais seguro e manutenível
+
 - **TailwindCSS** - Utility-first CSS
+  - **Por que TailwindCSS?** Estilização rápida, consistência, responsividade fácil
+  - **Benefício:** Interface moderna com menos CSS customizado
+
 - **Zustand** - State management leve
+  - **Por que Zustand?** Leve, simples, sem boilerplate excessivo
+  - **Benefício:** Gerenciamento de estado eficiente
+
 - **Axios** - Cliente HTTP
+  - **Por que Axios?** Cliente HTTP robusto, interceptors, fácil de usar
+  - **Benefício:** Comunicação com backend simplificada
+
 - **React Hook Form + Zod** - Validação de formulários
+  - **Por que?** Validação type-safe, performance, menos re-renders
+  - **Benefício:** Formulários validados e performáticos
 
 ### Infraestrutura
 
 - **Docker Compose** - PostgreSQL local
+  - **Por que Docker?** Ambiente isolado, reprodutível, fácil setup
+  - **Benefício:** Desenvolvimento local sem instalar PostgreSQL
+
 - **Maven** - Gerenciamento de dependências
+  - **Por que Maven?** Padrão Java, gerenciamento de dependências robusto
+  - **Benefício:** Build e dependências gerenciadas automaticamente
+
 - **Git** - Controle de versão
+  - **Por que Git?** Padrão da indústria, versionamento completo
+  - **Benefício:** Histórico completo de mudanças
+
+### 📊 Resumo da Stack
+
+| Tecnologia | Versão | Propósito | Benefício |
+|------------|--------|-----------|-----------|
+| **Java** | 21 | Linguagem base | Virtual Threads, LTS até 2029 |
+| **Spring Boot** | 3.2+ | Framework | Autoconfiguração, suporte Virtual Threads |
+| **PostgreSQL** | Latest | Banco de dados | ACID, robustez, performance |
+| **Resilience4j** | 2.1.0 | Resiliência | Circuit Breaker, Retry, Fallback |
+| **Flyway** | Latest | Migrations | Versionamento de schema |
+| **MapStruct** | 1.5.5 | Mapeamento | Type-safe, performático |
+| **Lombok** | 1.18.30 | Boilerplate | Reduz código, mantém legibilidade |
+| **SpringDoc** | 2.3.0 | Documentação | Swagger/OpenAPI automático |
+| **WebFlux** | 3.2+ | HTTP Reativo | WebClient para integrações |
+| **Spring AI** | Latest | IA | Integração com OpenAI |
+| **JavaParser** | Latest | Análise | AST para code review |
+
+### 🎯 Por que Esta Stack é Ideal?
+
+#### 1. **Alinhamento com Clientes Enterprise**
+
+**Accenture e clientes enterprise usam:**
+- Java 21 em microserviços
+- Spring Boot para desenvolvimento rápido
+- Arquitetura Hexagonal em sistemas críticos
+- Virtual Threads para alta concorrência
+- Resilience4j para resiliência
+
+#### 2. **Tecnologias de Ponta**
+
+- **Java 21**: Última versão LTS com Virtual Threads
+- **Spring Boot 3.2+**: Framework moderno com suporte nativo
+- **IA (OpenAI)**: Demonstra visão de futuro
+- **Saga Pattern**: Padrão enterprise para microserviços
+
+#### 3. **Demonstra Competências**
+
+- **Arquitetura**: Hexagonal, Clean Architecture
+- **Performance**: Virtual Threads, otimizações
+- **Resiliência**: Circuit Breaker, Retry, Fallback
+- **Observabilidade**: Saga Pattern, métricas
+- **Modernização**: IA, tecnologias emergentes
 
 ---
 
@@ -421,24 +524,22 @@ Em sistemas distribuídos, especialmente em e-commerce, é comum ter múltiplas 
 
 ### Documentos por Fase
 
-- **FASE1-FUNDACAO-ESTRUTURA.md** - Configuração inicial
-- **FASE2-CAMADA-DOMAIN.md** - Modelos de domínio
-- **FASE3-CAMADA-APPLICATION.md** - Use cases e saga
-- **FASE4-CAMADA-INFRASTRUCTURE-PERSISTENCIA.md** - JPA e repositories
-- **FASE7-SAGA-PATTERN.md** - Saga Pattern detalhado
-- **FASE8-CAMADA-PRESENTATION-REST-API.md** - Controllers e DTOs
-- **FASE9-VIRTUAL-THREADS-EXPLICACAO.md** - Conceitos de Virtual Threads
-- **FASE9-VIRTUAL-THREADS-PERFORMANCE.md** - Performance e métricas
+- **fases/FASE1-FUNDACAO-ESTRUTURA.md** - Configuração inicial
+- **fases/FASE2-CAMADA-DOMAIN.md** - Modelos de domínio
+- **fases/FASE3-CAMADA-APPLICATION.md** - Use cases e saga
+- **fases/FASE4-CAMADA-INFRASTRUCTURE-PERSISTENCIA.md** - JPA e repositories
+- **fases/FASE7-SAGA-PATTERN.md** - Saga Pattern detalhado
+- **fases/FASE8-CAMADA-PRESENTATION-REST-API.md** - Controllers e DTOs
+- **fases/FASE9-VIRTUAL-THREADS.md** - Virtual Threads completo (conceitos, benefícios, otimizações e métricas)
 
 ### Documentos Técnicos
 
-- **PROPOSITO-PRODUTO-E-STACK.md** - Justificativas da stack
+- **Este documento (CONTEXTO-PROJETO.md)** - Inclui justificativas detalhadas da stack (seção "Stack Tecnológico e Justificativas")
 - **ARQUITETURA-PARA-DIAGRAMA.md** - Descrição para diagramas
 - **GUIA-COMPLETO-DE-TESTES.md** - Estratégia de testes
 - **FRONTEND-PROPOSITO-E-INTEGRACAO.md** - Frontend e integração
 - **FRONTEND-TESTES-JORNADA-INTEGRACAO.md** - Testes do frontend
 - **DEPLOY-GCP-RECURSOS-NECESSARIOS.md** - Deploy no GCP
-- **REVISAO-COESAO-DOCUMENTOS.md** - Revisão de documentação
 
 ### Documentos de Promoção
 

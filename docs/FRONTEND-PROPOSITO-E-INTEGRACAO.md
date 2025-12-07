@@ -301,8 +301,8 @@ Todos os componentes seguem princípios de:
 ## 📚 Documentação Relacionada
 
 ### Backend
-- [Propósito do Produto e Stack](PROPOSITO-PRODUTO-E-STACK.md) - Visão geral do projeto
-- [Fase 8: REST API](FASE8-CAMADA-PRESENTATION-REST-API.md) - Endpoints do backend
+- [Contexto Completo do Projeto](CONTEXTO-PROJETO.md) - Visão geral completa do projeto (inclui propósito e stack)
+- [Fase 8: REST API](fases/FASE8-CAMADA-PRESENTATION-REST-API.md) - Endpoints do backend
 - [Guia Completo de Testes](GUIA-COMPLETO-DE-TESTES.md) - Como testar backend
 
 ### Frontend

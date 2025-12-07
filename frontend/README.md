@@ -25,7 +25,7 @@ Frontend do Smart Order Orchestrator construído com React + Vite + TypeScript.
 
 - 📘 [Propósito e Integração com Backend](../docs/FRONTEND-PROPOSITO-E-INTEGRACAO.md) - Propósito do frontend, arquitetura de comunicação e integração
 - 🧪 [Testes de Jornada e Integração](../docs/FRONTEND-TESTES-JORNADA-INTEGRACAO.md) - Estratégia de testes, unitários, integração e E2E
-- 📘 [Propósito do Produto e Stack](../docs/PROPOSITO-PRODUTO-E-STACK.md) - Visão geral do projeto completo
+- 📘 [Contexto Completo do Projeto](../docs/CONTEXTO-PROJETO.md) - Visão geral completa do projeto (inclui propósito e stack)
 - 🧪 [Guia Completo de Testes (Backend)](../docs/GUIA-COMPLETO-DE-TESTES.md) - Como testar o backend
 - ☁️ [Deploy GCP - Recursos Necessários](../docs/DEPLOY-GCP-RECURSOS-NECESSARIOS.md) - Recursos e configuração para deploy
 

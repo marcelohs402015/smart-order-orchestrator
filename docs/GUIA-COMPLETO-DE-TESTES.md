@@ -734,12 +734,12 @@ void shouldCalculateTotalCorrectly() {
 
 ### Documentação de Fases
 
-- [Fase 1: Fundação e Estrutura](FASE1-FUNDACAO-ESTRUTURA.md) - Configuração inicial
-- [Fase 2: Camada Domain](FASE2-CAMADA-DOMAIN.md) - Modelos de domínio
-- [Fase 3: Camada Application](FASE3-CAMADA-APPLICATION.md) - Use cases
-- [Fase 4: Infrastructure - Persistência](FASE4-CAMADA-INFRASTRUCTURE-PERSISTENCIA.md) - JPA e Repositories
+- [Fase 1: Fundação e Estrutura](fases/FASE1-FUNDACAO-ESTRUTURA.md) - Configuração inicial
+- [Fase 2: Camada Domain](fases/FASE2-CAMADA-DOMAIN.md) - Modelos de domínio
+- [Fase 3: Camada Application](fases/FASE3-CAMADA-APPLICATION.md) - Use cases
+- [Fase 4: Infrastructure - Persistência](fases/FASE4-CAMADA-INFRASTRUCTURE-PERSISTENCIA.md) - JPA e Repositories
 - [Fase 6: Integração OpenAI](README-OPENAI.md) - Testes específicos de IA
-- [Fase 7: Saga Pattern](FASE7-SAGA-PATTERN.md) - Testes de orquestração
+- [Fase 7: Saga Pattern](fases/FASE7-SAGA-PATTERN.md) - Testes de orquestração
 
 ### Documentação Técnica
 

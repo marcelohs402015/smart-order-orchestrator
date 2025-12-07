@@ -342,3 +342,127 @@ public class OrderSagaOrchestrator {
 - Mostra capacidade de arquitetar soluções complexas
 - Facilita apresentação técnica em entrevistas
 
+---
+
+## 🔮 Melhorias Futuras (Roadmap)
+
+> **📋 Nota:** Esta seção apresenta melhorias técnicas planejadas para evolução do Saga Pattern. A implementação atual já é robusta e funcional para produção.
+
+### 🎯 Event-Driven Architecture Implementada
+
+**IMPORTANTE:** O sistema já publica eventos em cada step da saga usando **Factory Pattern** para message brokers. Veja:
+- **Eventos:** `backend/src/main/java/com/marcelo/orchestrator/domain/event/saga/`
+- **Factory:** `backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/factory/EventPublisherFactory.java`
+- **Adapters:** `backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/`
+- **Integração:** `OrderSagaOrchestrator.java` (publicação de eventos após cada step)
+
+### ✅ Pontos Fortes da Implementação Atual
+
+1. **Orquestração Centralizada**: Implementação correta do padrão de orquestração
+2. **Rastreamento Completo**: Cada passo é persistido com timestamps e duração
+3. **Compensação Automática**: Cancela pedido se pagamento falhar
+4. **Resilience4j nos Adapters**: Circuit Breaker e Retry nas integrações externas
+5. **Estrutura de Dados**: Tabelas bem normalizadas com índices apropriados
+6. **Idempotência**: Implementada com `idempotencyKey` único
+7. **Event-Driven**: Eventos publicados em cada step (OrderCreated, PaymentProcessed, etc.)
+
+### 🔄 Melhorias Planejadas
+
+#### 1. **Persistência - Checkpoint Intermediário**
+
+**Situação Atual:**
+- Tudo está em uma única transação (`@Transactional`)
+- Se a aplicação cair entre steps, não há como recuperar
+- Não há checkpoint intermediário que permita retomar de onde parou
+
+**Melhoria Planejada:**
+- Salvar checkpoint após cada step bem-sucedido
+- Implementar recuperação automática de sagas interrompidas
+- Job scheduler para retomar sagas pendentes
+
+**Benefício:**
+- Resiliência contra falhas de aplicação
+- Possibilidade de retomar sagas após restart
+
+#### 2. **Consistência - Idempotência Avançada**
+
+**Situação Atual:**
+- Idempotência implementada com `idempotencyKey`
+- Verificação antes de criar nova saga
+
+**Melhoria Planejada:**
+- Idempotência por step (não apenas por saga completa)
+- Verificação de estado antes de executar cada step
+- Prevenção de race conditions com locks otimistas
+
+**Benefício:**
+- Maior garantia de idempotência
+- Prevenção de execuções duplicadas mesmo em cenários complexos
+
+#### 3. **Resiliência - Recuperação Automática**
+
+**Situação Atual:**
+- Compensação automática em caso de falha
+- Não há retry automático de sagas falhas
+
+**Melhoria Planejada:**
+- Job scheduler para retry automático de sagas falhas
+- Estratégias de retry configuráveis (exponencial backoff)
+- Dead Letter Queue para sagas que falharam múltiplas vezes
+
+**Benefício:**
+- Recuperação automática de falhas transitórias
+- Menor intervenção manual necessária
+
+#### 4. **Observabilidade - Métricas Avançadas**
+
+**Situação Atual:**
+- Rastreamento completo de cada execução
+- Persistência de timestamps e duração
+
+**Melhoria Planejada:**
+- Métricas de taxa de sucesso por step
+- Alertas para sagas que demoram muito
+- Dashboard de monitoramento em tempo real
+- Distributed Tracing (Jaeger/Zipkin)
+
+**Benefício:**
+- Melhor visibilidade de problemas
+- Identificação proativa de gargalos
+
+#### 5. **Escalabilidade - Processamento Assíncrono**
+
+**Situação Atual:**
+- Saga executada de forma síncrona na requisição HTTP
+
+**Melhoria Planejada:**
+- Processamento assíncrono de sagas
+- Fila de processamento (Kafka, RabbitMQ)
+- Workers dedicados para processar sagas
+
+**Benefício:**
+- Melhor escalabilidade
+- Requisições HTTP mais rápidas
+- Processamento em background
+
+### 📊 Priorização das Melhorias
+
+| Melhoria | Prioridade | Complexidade | Impacto |
+|----------|-----------|--------------|---------|
+| Checkpoint Intermediário | Alta | Média | Alto |
+| Idempotência Avançada | Média | Baixa | Médio |
+| Recuperação Automática | Alta | Média | Alto |
+| Métricas Avançadas | Média | Baixa | Médio |
+| Processamento Assíncrono | Baixa | Alta | Alto |
+
+### 🎯 Conclusão
+
+A implementação atual do Saga Pattern é **robusta e funcional para produção**, com:
+- ✅ Orquestração completa
+- ✅ Compensação automática
+- ✅ Idempotência
+- ✅ Rastreamento completo
+- ✅ Event-Driven Architecture
+
+As melhorias planejadas são **evoluções** que aumentam ainda mais a resiliência e escalabilidade, mas não são críticas para o funcionamento atual do sistema.
+

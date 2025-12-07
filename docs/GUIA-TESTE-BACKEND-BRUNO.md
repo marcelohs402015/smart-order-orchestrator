@@ -13,6 +13,7 @@
 5. [Passo 4: Subir a Aplicação](#passo-4-subir-a-aplicação)
 6. [Passo 5: Configurar Bruno](#passo-5-configurar-bruno)
 7. [Cenários de Teste](#cenários-de-teste)
+8. [Passo 7: Testar CI/CD Pipeline](#passo-7-testar-cicd-pipeline)
    - [Cenário 1: Pedido com Sucesso Completo](#cenário-1-pedido-com-sucesso-completo)
    - [Cenário 2: Testar Idempotência](#cenário-2-testar-idempotência)
    - [Cenário 3: Consultar Pedido Criado](#cenário-3-consultar-pedido-criado)
@@ -725,6 +726,140 @@ kill -9 <PID>
 
 ---
 
+## 🔄 Passo 7: Testar CI/CD Pipeline
+
+**Objetivo:** Validar que o pipeline de CI/CD funciona corretamente e executa testes automaticamente.
+
+### 7.1. Verificar Arquivo de CI/CD
+
+**Localização:** `.github/workflows/ci.yml`
+
+**O que faz:**
+- Executa a cada push e pull request
+- Compila o projeto Java 21
+- Executa testes unitários
+- Valida que não há erros de compilação
+
+### 7.2. Testar Localmente (Opcional)
+
+**Usando Act (ferramenta para testar GitHub Actions localmente):**
+
+```bash
+# Instalar Act (se não tiver)
+# Windows: choco install act-cli
+# Linux/Mac: curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+# Executar workflow localmente
+act -j build-and-test
+
+# Ou executar apenas o build
+act -j build-and-test --dry-run
+```
+
+**⚠️ Nota:** Act é opcional. O CI/CD roda automaticamente no GitHub quando você faz push.
+
+### 7.3. Testar no GitHub
+
+**Opção 1: Fazer Push e Verificar**
+
+1. Fazer commit das mudanças:
+   ```bash
+   git add .
+   git commit -m "test: adicionar testes"
+   git push origin main
+   ```
+
+2. Acessar GitHub Actions:
+   - Ir para: `https://github.com/seu-usuario/smart-order-orchestrator/actions`
+   - Verificar se o workflow está rodando
+   - Aguardar conclusão
+
+3. Verificar Resultados:
+   - ✅ **Sucesso:** Build verde, todos os testes passaram
+   - ❌ **Falha:** Verificar logs para identificar problema
+
+**Opção 2: Criar Pull Request**
+
+1. Criar branch:
+   ```bash
+   git checkout -b feature/test-ci
+   ```
+
+2. Fazer mudanças e commit:
+   ```bash
+   git add .
+   git commit -m "test: validar CI/CD"
+   git push origin feature/test-ci
+   ```
+
+3. Criar Pull Request no GitHub
+4. Verificar que o CI/CD roda automaticamente na PR
+
+### 7.4. O que Observar no CI/CD
+
+**✅ Build Bem-Sucedido:**
+- Step "Set up JDK 21" - ✅ Concluído
+- Step "Build with Maven" - ✅ Compilação bem-sucedida
+- Step "Run tests" - ✅ Todos os testes passaram
+
+**📊 Logs Esperados:**
+```
+[INFO] Building smart-order-orchestrator 0.0.1-SNAPSHOT
+[INFO] Compiling 50 source files
+[INFO] Tests run: 25, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+```
+
+**❌ Se Build Falhar:**
+- Verificar logs do step que falhou
+- Verificar se há erros de compilação
+- Verificar se testes estão falhando
+- Corrigir problemas localmente antes de fazer push
+
+### 7.5. Validar que Testes Rodam no CI
+
+**Para garantir que o CI está testando corretamente:**
+
+1. **Fazer um teste falhar propositalmente:**
+   ```java
+   // Em algum teste, adicionar:
+   @Test
+   void testFail() {
+       fail("Teste para validar CI");
+   }
+   ```
+
+2. **Fazer commit e push:**
+   ```bash
+   git add .
+   git commit -m "test: validar que CI detecta falha"
+   git push
+   ```
+
+3. **Verificar que CI falha:**
+   - GitHub Actions deve mostrar ❌ (falha)
+   - Logs devem mostrar o teste que falhou
+
+4. **Reverter a mudança:**
+   ```bash
+   git revert HEAD
+   git push
+   ```
+
+5. **Verificar que CI passa novamente:**
+   - GitHub Actions deve mostrar ✅ (sucesso)
+
+### 7.6. Benefícios do CI/CD
+
+**O que o CI/CD garante:**
+- ✅ Código sempre compila
+- ✅ Testes sempre passam
+- ✅ Qualidade mantida em cada commit
+- ✅ Feedback rápido em caso de problemas
+- ✅ Histórico de execuções para auditoria
+
+---
+
 ## 📝 Próximos Passos
 
 Após testar todos os cenários:
@@ -746,6 +881,11 @@ Após testar todos os cenários:
    - Fazer múltiplas requisições simultâneas
    - Verificar uso de Virtual Threads
 
+5. ✅ **Validar CI/CD:**
+   - Fazer push e verificar que CI/CD roda
+   - Garantir que testes executam automaticamente
+   - Validar que build falha quando há erros
+
 ---
 
 ## 🎓 O que Você Aprendeu
@@ -760,6 +900,7 @@ Após completar este guia, você entendeu:
 - ✅ Como verificar observabilidade no banco de dados
 - ✅ Como rastrear execuções de saga
 - ✅ Como debugar problemas comuns
+- ✅ Como validar CI/CD pipeline (GitHub Actions)
 
 ---
 
