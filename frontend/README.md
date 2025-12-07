@@ -2,6 +2,25 @@
 
 Frontend do Smart Order Orchestrator construído com React + Vite + TypeScript.
 
+## 🎨 Interface do Produto
+
+### Dashboard - Visão Geral
+
+![Dashboard do Smart Order Orchestrator](./docs/images/dashboard.png)
+
+**Características da Interface:**
+- ✅ **Design Moderno e Limpo** - Interface intuitiva com TailwindCSS
+- ✅ **Dashboard Informativo** - Métricas em tempo real (Total de Pedidos, Pagos, Pendentes, Alto Risco)
+- ✅ **Navegação Intuitiva** - Menu superior com acesso rápido (Dashboard, Pedidos, Criar Pedido)
+- ✅ **Ações Rápidas** - Botões destacados para criar pedido e visualizar todos
+- ✅ **Responsivo** - Interface adaptável para diferentes tamanhos de tela
+
+**Funcionalidades Visíveis:**
+- 📊 Cards de métricas com cores diferenciadas (azul, verde, laranja, vermelho)
+- 🚀 Ações rápidas para criar e visualizar pedidos
+- 📋 Seção de pedidos recentes com estado vazio informativo
+- 🎯 Navegação clara e acessível
+
 ## 📚 Documentação Completa
 
 - 📘 [Propósito e Integração com Backend](../docs/FRONTEND-PROPOSITO-E-INTEGRACAO.md) - Propósito do frontend, arquitetura de comunicação e integração
