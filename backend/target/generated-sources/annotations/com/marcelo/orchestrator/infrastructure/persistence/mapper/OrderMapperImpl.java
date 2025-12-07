@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-12-07T08:33:02-0300",
-    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.44.0.v20251118-1623, environment: Java 21.0.9 (Eclipse Adoptium)"
+    date = "2025-12-07T10:23:12-0300",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.8 (Oracle Corporation)"
 )
 @Component
 public class OrderMapperImpl implements OrderMapper {
@@ -19,23 +19,21 @@ public class OrderMapperImpl implements OrderMapper {
             return null;
         }
 
-        OrderEntity orderEntity = new OrderEntity();
+        OrderEntity.OrderEntityBuilder orderEntity = OrderEntity.builder();
 
-        orderEntity.setId( order.getId() );
-        orderEntity.setOrderNumber( order.getOrderNumber() );
-        orderEntity.setStatus( order.getStatus() );
-        orderEntity.setCustomerId( order.getCustomerId() );
-        orderEntity.setCustomerName( order.getCustomerName() );
-        orderEntity.setCustomerEmail( order.getCustomerEmail() );
-        orderEntity.setTotalAmount( order.getTotalAmount() );
-        orderEntity.setPaymentId( order.getPaymentId() );
-        orderEntity.setRiskLevel( order.getRiskLevel() );
-        orderEntity.setCreatedAt( order.getCreatedAt() );
-        orderEntity.setUpdatedAt( order.getUpdatedAt() );
+        orderEntity.id( order.getId() );
+        orderEntity.orderNumber( order.getOrderNumber() );
+        orderEntity.status( order.getStatus() );
+        orderEntity.customerId( order.getCustomerId() );
+        orderEntity.customerName( order.getCustomerName() );
+        orderEntity.customerEmail( order.getCustomerEmail() );
+        orderEntity.totalAmount( order.getTotalAmount() );
+        orderEntity.paymentId( order.getPaymentId() );
+        orderEntity.riskLevel( order.getRiskLevel() );
+        orderEntity.createdAt( order.getCreatedAt() );
+        orderEntity.updatedAt( order.getUpdatedAt() );
 
-        mapItemsAfterMapping( order, orderEntity );
-
-        return orderEntity;
+        return orderEntity.build();
     }
 
     @Override
