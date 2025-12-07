@@ -48,5 +48,20 @@ public class CreateOrderResponse {
             .errorMessage(errorMessage)
             .build();
     }
+    
+    /**
+     * Cria response indicando que saga está em progresso (idempotência).
+     * 
+     * <p>Padrão: Idempotência - usado quando uma saga com a mesma
+     * idempotency_key já está sendo executada.</p>
+     */
+    public static CreateOrderResponse inProgress(UUID sagaExecutionId, String message) {
+        return CreateOrderResponse.builder()
+            .success(false)
+            .order(null)
+            .sagaExecutionId(sagaExecutionId)
+            .errorMessage(message)
+            .build();
+    }
 }
 

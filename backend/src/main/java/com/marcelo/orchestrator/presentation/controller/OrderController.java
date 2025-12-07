@@ -78,8 +78,15 @@ public class OrderController {
             @Valid @RequestBody CreateOrderRequest request) {
         log.info("Creating order for customer: {}", request.getCustomerId());
         
+        // Gerar idempotencyKey se não fornecido
+        // Padrão: Idempotência - garante que requisições duplicadas não criem pedidos duplicados
+        String idempotencyKey = request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank()
+            ? request.getIdempotencyKey()
+            : UUID.randomUUID().toString(); // Gerar automaticamente se não fornecido
+        
         // Converter DTO para Command
         OrderSagaCommand command = OrderSagaCommand.builder()
+            .idempotencyKey(idempotencyKey)
             .customerId(request.getCustomerId())
             .customerName(request.getCustomerName())
             .customerEmail(request.getCustomerEmail())
@@ -92,12 +99,20 @@ public class OrderController {
         OrderSagaResult result = sagaOrchestrator.execute(command);
         
         // Converter resultado para response
+        // Padrão: Idempotência - tratar caso de saga em progresso
         if (result.isSuccess()) {
             CreateOrderResponse response = CreateOrderResponse.success(
                 OrderResponse.from(result.getOrder()),
                 result.getSagaExecutionId()
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } else if (result.isInProgress()) {
+            // Saga já está em progresso (idempotência)
+            CreateOrderResponse response = CreateOrderResponse.inProgress(
+                result.getSagaExecutionId(),
+                "Order creation is already in progress"
+            );
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
         } else {
             CreateOrderResponse response = CreateOrderResponse.failed(
                 result.getSagaExecutionId(),

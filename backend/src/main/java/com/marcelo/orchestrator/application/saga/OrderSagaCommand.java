@@ -23,11 +23,28 @@ import java.util.UUID;
  * os passos sequencialmente. Isso simplifica a interface e garante que todos
  * os dados necessários estejam disponíveis.</p>
  * 
+ * <h3>Padrão: Idempotência</h3>
+ * <p>O campo {@code idempotencyKey} permite garantir que executar a mesma saga
+ * múltiplas vezes produza o mesmo resultado. Se uma saga com a mesma chave já
+ * foi executada, retorna o resultado anterior ao invés de criar novo pedido.</p>
+ * 
  * @author Marcelo
  */
 @Getter
 @Builder
 public class OrderSagaCommand {
+    
+    /**
+     * Chave de idempotência para prevenir execuções duplicadas.
+     * 
+     * <p>Padrão: Idempotency Key - garante que requisições duplicadas
+     * (por timeout, retry, ou usuário clicando várias vezes) não criem
+     * pedidos duplicados.</p>
+     * 
+     * <p>Deve ser gerado pelo cliente e ser único por requisição.
+     * Recomendado: UUID ou hash dos dados da requisição.</p>
+     */
+    private final String idempotencyKey;
     
     // Dados para criação do pedido
     private final UUID customerId;

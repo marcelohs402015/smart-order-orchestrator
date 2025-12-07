@@ -33,5 +33,16 @@ public interface JpaSagaExecutionRepository extends JpaRepository<SagaExecutionE
      * Busca execuções por status.
      */
     List<SagaExecutionEntity> findByStatus(SagaExecutionEntity.SagaStatus status);
+    
+    /**
+     * Busca execução por chave de idempotência.
+     * 
+     * <p>Padrão: Idempotência - usado para verificar se uma saga com
+     * a mesma chave já foi executada ou está em progresso.</p>
+     * 
+     * @param idempotencyKey Chave de idempotência
+     * @return Saga encontrada ou Optional.empty() se não existir
+     */
+    Optional<SagaExecutionEntity> findByIdempotencyKey(String idempotencyKey);
 }
 

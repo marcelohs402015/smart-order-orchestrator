@@ -49,5 +49,17 @@ public class CreateOrderRequest {
     private String paymentMethod;
     
     private String currency; // Opcional, padrão: BRL
+    
+    /**
+     * Chave de idempotência para prevenir execuções duplicadas.
+     * 
+     * <p>Padrão: Idempotency Key - garante que requisições duplicadas
+     * (por timeout, retry, ou usuário clicando várias vezes) não criem
+     * pedidos duplicados.</p>
+     * 
+     * <p>Opcional: Se não fornecido, será gerado automaticamente.
+     * Recomendado: Cliente deve fornecer UUID único por requisição.</p>
+     */
+    private String idempotencyKey; // Opcional - será gerado se não fornecido
 }
 

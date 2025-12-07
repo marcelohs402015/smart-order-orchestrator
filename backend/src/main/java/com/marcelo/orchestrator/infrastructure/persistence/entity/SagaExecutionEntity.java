@@ -36,7 +36,8 @@ import java.util.UUID;
 @Table(name = "saga_executions", indexes = {
     @Index(name = "idx_saga_order_id", columnList = "order_id"),
     @Index(name = "idx_saga_status", columnList = "status"),
-    @Index(name = "idx_saga_started_at", columnList = "started_at")
+    @Index(name = "idx_saga_started_at", columnList = "started_at"),
+    @Index(name = "idx_saga_idempotency_key", columnList = "idempotency_key", unique = true)
 })
 @Getter
 @Setter
@@ -48,6 +49,19 @@ public class SagaExecutionEntity {
     @Id
     @Column(name = "id", columnDefinition = "UUID")
     private UUID id;
+    
+    /**
+     * Chave de idempotência para prevenir execuções duplicadas.
+     * 
+     * <p>Padrão: Idempotency Key - garante que requisições duplicadas
+     * (por timeout, retry, ou usuário clicando várias vezes) não criem
+     * pedidos duplicados.</p>
+     * 
+     * <p>Deve ser único por requisição. Índice único garante que não
+     * haverá duplicatas no banco.</p>
+     */
+    @Column(name = "idempotency_key", length = 255, unique = true)
+    private String idempotencyKey;
     
     /**
      * ID do pedido associado a esta saga.

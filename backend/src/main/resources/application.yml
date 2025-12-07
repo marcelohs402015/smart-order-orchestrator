@@ -130,6 +130,26 @@ resilience4j:
         retryExceptions: java.net.ConnectException,java.util.concurrent.TimeoutException
 
 # ============================================================================
+# Message Broker Configuration (Event-Driven Architecture)
+# ============================================================================
+# Configuração para publicação de eventos usando Factory Pattern.
+# Permite trocar message broker (Kafka, Pub/Sub, RabbitMQ) via configuração.
+#
+# Padrão: Factory Pattern - EventPublisherFactory cria instância correta
+# baseada nesta propriedade, sem alterar código.
+#
+# Tipos suportados:
+#   - IN_MEMORY: Para testes e desenvolvimento (padrão)
+#   - KAFKA: Apache Kafka (alta performance, escalável)
+#   - PUBSUB: Google Cloud Pub/Sub (GCP nativo, serverless)
+#   - RABBITMQ: RabbitMQ (AMQP, fácil de usar)
+#   - SQS: AWS SQS (AWS nativo, serverless)
+app:
+  message:
+    broker:
+      type: ${MESSAGE_BROKER_TYPE:IN_MEMORY} # Padrão: IN_MEMORY para desenvolvimento
+
+# ============================================================================
 # Actuator (Health Checks & Metrics)
 # ============================================================================
 # Endpoints de monitoramento e observabilidade.
