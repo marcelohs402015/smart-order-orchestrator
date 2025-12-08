@@ -72,7 +72,7 @@
 | **Virtual Threads** | ✅ Completo | Java 21 Virtual Threads implementado |
 | **Observabilidade** | ✅ Completo | Rastreamento completo de execuções |
 | **OpenAI Integration** | ✅ Completo | Análise de risco com IA |
-| **MCP Code Review** | ⚠️ Estrutura Criada | Módulo criado, mas com erro de dependência Maven |
+| **MCP Code Review** | ✅ Estrutura Completa | Módulo criado, dependência corrigida (OpenAI Java Client) |
 | **Testes Unitários** | ✅ Completo | JUnit 5, Mockito |
 | **Testes de Integração** | ✅ Completo | Testes end-to-end |
 | **CI/CD Pipeline** | ✅ Completo | GitHub Actions (`.github/workflows/ci.yml`) |
@@ -529,10 +529,10 @@ Estes documentos estão no `.gitignore` e **NÃO** são commitados no GitHub:
 
 ### Curto Prazo
 
-1. **Corrigir MCP Code Review Server**
-   - Resolver erro de dependência Maven
-   - Verificar versão correta do Spring AI
-   - Completar implementação
+1. **Completar MCP Code Review Server**
+   - ✅ Dependência corrigida (migrado para OpenAI Java Client)
+   - Testar build e execução
+   - Validar integração com OpenAI API
 
 2. **Melhorar Testes**
    - Aumentar cobertura de testes

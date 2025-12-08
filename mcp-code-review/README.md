@@ -46,9 +46,9 @@ mcp-code-review/
 ## 🛠️ Tecnologias
 
 - **Spring Boot 3.2+** - Framework base
-- **Spring AI** - Suporte nativo para MCP Server
+- **OpenAI Java Client** - Biblioteca oficial para integração com OpenAI API
 - **JavaParser** - Análise AST de código Java
-- **OpenAI GPT-4** - Feedback contextualizado com IA
+- **OpenAI GPT-3.5/GPT-4** - Feedback contextualizado com IA
 - **JSON-RPC 2.0** - Protocolo de comunicação MCP
 
 ---

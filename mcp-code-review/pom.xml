@@ -24,15 +24,25 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         
-        <!-- Spring AI: Suporte nativo para MCP Server -->
-        <spring-ai.version>1.0.0-M4</spring-ai.version>
-        
         <!-- JavaParser: Análise AST de código Java -->
         <javaparser.version>3.25.1</javaparser.version>
         
         <!-- Lombok -->
         <lombok.version>1.18.30</lombok.version>
+        
     </properties>
+    
+    <repositories>
+        <!-- Repositório Spring Milestone (caso precise do Spring AI no futuro) -->
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
     
     <dependencies>
         <!-- Spring Boot Web: REST API para expor o servidor MCP -->
@@ -41,11 +51,10 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         
-        <!-- Spring AI: Suporte para MCP Server -->
+        <!-- Spring WebFlux: WebClient para chamadas HTTP reativas à OpenAI API -->
         <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-            <version>${spring-ai.version}</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
         
         <!-- JavaParser: Análise de código Java (AST) -->

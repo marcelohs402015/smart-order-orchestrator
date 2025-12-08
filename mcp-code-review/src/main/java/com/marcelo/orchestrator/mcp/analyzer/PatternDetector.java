@@ -3,7 +3,6 @@ package com.marcelo.orchestrator.mcp.analyzer;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
