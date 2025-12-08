@@ -5,11 +5,24 @@
 # ============================================================================
 
 spring:
-  # PostgreSQL para produção (via variáveis de ambiente)
+  # ============================================================================
+  # Google Cloud Secret Manager Configuration
+  # ============================================================================
+  # Spring Cloud GCP permite acessar secrets diretamente via prefixo sm://
+  # Os secrets são injetados automaticamente pelo Cloud Run/App Engine
+  cloud:
+    gcp:
+      secretmanager:
+        enabled: true
+        project-id: ${GCP_PROJECT_ID:}
+  
+  # PostgreSQL para produção (via Secret Manager ou variáveis de ambiente)
+  # Prioridade: Secret Manager (sm://) > Variável de Ambiente > Valor padrão
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/smartorder}
     username: ${DATABASE_USERNAME:postgres}
-    password: ${DATABASE_PASSWORD:postgres}
+    # Usar Secret Manager em produção (sm://) ou variável de ambiente como fallback
+    password: ${sm://database-password:${DATABASE_PASSWORD:postgres}}
     driver-class-name: org.postgresql.Driver
     hikari:
       # Pool de conexões otimizado para Virtual Threads
@@ -78,7 +91,32 @@ management:
       http.server.requests: true
       hikari.connections: true
 
+# ============================================================================
+# AbacatePay Configuration (Production)
+# ============================================================================
+# Chave de API via Secret Manager (sm://) ou variável de ambiente como fallback
+abacatepay:
+  api:
+    base-url: ${ABACATEPAY_BASE_URL:https://api.abacatepay.com/v1}
+    # Usar Secret Manager em produção (sm://) ou variável de ambiente como fallback
+    key: ${sm://abacatepay-api-key:${ABACATEPAY_API_KEY:}}
+
+# ============================================================================
+# OpenAI Configuration (Production)
+# ============================================================================
+# Chave de API via Secret Manager (sm://) ou variável de ambiente como fallback
+openai:
+  api:
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    # Usar Secret Manager em produção (sm://) ou variável de ambiente como fallback
+    key: ${sm://openai-api-key:${OPENAI_API_KEY:}}
+    model: ${OPENAI_MODEL:gpt-3.5-turbo}
+    temperature: ${OPENAI_TEMPERATURE:0.0}
+    max-tokens: ${OPENAI_MAX_TOKENS:10}
+
+# ============================================================================
 # Resilience4j - Configurações mais conservadoras em produção
+# ============================================================================
 resilience4j:
   circuitbreaker:
     instances:

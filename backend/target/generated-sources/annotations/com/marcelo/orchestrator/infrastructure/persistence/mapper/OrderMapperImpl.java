@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-12-07T10:23:12-0300",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.8 (Oracle Corporation)"
+    date = "2025-12-08T16:39:41-0300",
+    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.44.0.v20251118-1623, environment: Java 21.0.9 (Eclipse Adoptium)"
 )
 @Component
 public class OrderMapperImpl implements OrderMapper {
@@ -21,16 +21,16 @@ public class OrderMapperImpl implements OrderMapper {
 
         OrderEntity.OrderEntityBuilder orderEntity = OrderEntity.builder();
 
-        orderEntity.id( order.getId() );
-        orderEntity.orderNumber( order.getOrderNumber() );
-        orderEntity.status( order.getStatus() );
+        orderEntity.createdAt( order.getCreatedAt() );
+        orderEntity.customerEmail( order.getCustomerEmail() );
         orderEntity.customerId( order.getCustomerId() );
         orderEntity.customerName( order.getCustomerName() );
-        orderEntity.customerEmail( order.getCustomerEmail() );
-        orderEntity.totalAmount( order.getTotalAmount() );
+        orderEntity.id( order.getId() );
+        orderEntity.orderNumber( order.getOrderNumber() );
         orderEntity.paymentId( order.getPaymentId() );
         orderEntity.riskLevel( order.getRiskLevel() );
-        orderEntity.createdAt( order.getCreatedAt() );
+        orderEntity.status( order.getStatus() );
+        orderEntity.totalAmount( order.getTotalAmount() );
         orderEntity.updatedAt( order.getUpdatedAt() );
 
         return orderEntity.build();
@@ -42,16 +42,16 @@ public class OrderMapperImpl implements OrderMapper {
             return;
         }
 
-        entity.setId( order.getId() );
-        entity.setOrderNumber( order.getOrderNumber() );
-        entity.setStatus( order.getStatus() );
+        entity.setCreatedAt( order.getCreatedAt() );
+        entity.setCustomerEmail( order.getCustomerEmail() );
         entity.setCustomerId( order.getCustomerId() );
         entity.setCustomerName( order.getCustomerName() );
-        entity.setCustomerEmail( order.getCustomerEmail() );
-        entity.setTotalAmount( order.getTotalAmount() );
+        entity.setId( order.getId() );
+        entity.setOrderNumber( order.getOrderNumber() );
         entity.setPaymentId( order.getPaymentId() );
         entity.setRiskLevel( order.getRiskLevel() );
-        entity.setCreatedAt( order.getCreatedAt() );
+        entity.setStatus( order.getStatus() );
+        entity.setTotalAmount( order.getTotalAmount() );
         entity.setUpdatedAt( order.getUpdatedAt() );
 
         mapItemsAfterMapping( order, entity );

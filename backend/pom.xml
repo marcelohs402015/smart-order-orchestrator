@@ -133,6 +133,20 @@
             <version>2.3.0</version>
         </dependency>
         
+        <!-- Google Cloud Secret Manager: Gerenciamento seguro de secrets (chaves de API, senhas) -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-secretmanager</artifactId>
+            <version>2.4.0</version>
+        </dependency>
+        
+        <!-- Spring Cloud GCP Secret Manager: Integração Spring Boot com Secret Manager -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>spring-cloud-gcp-starter-secretmanager</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+        
         <!-- Spring Boot Test: Framework de testes, MockMvc, TestContainers support -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

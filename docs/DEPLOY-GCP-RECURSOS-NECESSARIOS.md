@@ -25,8 +25,8 @@
 - ❌ **Dockerfile** para containerização
 - ❌ **Cloud Build** configuration (cloudbuild.yaml)
 - ❌ **App Engine** ou **Cloud Run** configuration
-- ❌ **Secret Manager** para chaves de API
-- ❌ **Service Account** com permissões adequadas
+- ✅ **Secret Manager** - Documentação e integração implementadas (ver `docs/SEGURANCA-GERENCIAMENTO-SECRETS.md`)
+- ✅ **Service Account** - Script de setup criado (ver `backend/scripts/setup-secrets-gcp.sh`)
 
 #### Frontend
 - ❌ **Dockerfile** para containerização (opcional, pode usar Cloud Storage)
