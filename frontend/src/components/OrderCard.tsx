@@ -15,10 +15,9 @@ export const OrderCard = ({ order, onClick }: OrderCardProps) => {
   const statusInfo = getOrderStatusInfo(order.status);
   const riskInfo = getRiskLevelInfo(order.riskLevel);
 
-  return (
+  const cardContent = (
     <Card
       className={onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}
-      onClick={onClick}
     >
       <div className="space-y-4">
         {/* Header */}
@@ -75,5 +74,26 @@ export const OrderCard = ({ order, onClick }: OrderCardProps) => {
       </div>
     </Card>
   );
+
+  if (onClick) {
+    return (
+      <div
+        onClick={onClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick();
+          }
+        }}
+        tabIndex={0}
+        role="button"
+        aria-label={`Ver detalhes do pedido ${order.orderNumber}`}
+      >
+        {cardContent}
+      </div>
+    );
+  }
+
+  return cardContent;
 };
 

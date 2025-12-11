@@ -68,12 +68,29 @@ apiClient.interceptors.response.use(
     if (error.response) {
       // Erro com resposta do servidor
       const data = error.response.data as any;
-      apiError.message = data.message || `Erro ${error.response.status}: ${error.response.statusText}`;
+      apiError.status = error.response.status;
+      apiError.error = data.error || error.response.statusText;
+      
+      // Mensagens mais específicas baseadas no status
+      if (error.response.status === 500) {
+        apiError.message = data.message || 'Erro interno do servidor. O backend está respondendo, mas ocorreu um erro ao processar a requisição. Verifique os logs do backend e a configuração do banco de dados.';
+      } else if (error.response.status === 404) {
+        apiError.message = data.message || 'Recurso não encontrado.';
+      } else if (error.response.status === 400) {
+        apiError.message = data.message || 'Dados inválidos. Verifique os campos do formulário.';
+      } else {
+        apiError.message = data.message || `Erro ${error.response.status}: ${error.response.statusText}`;
+      }
+      
       apiError.errors = data.errors;
+      // Mapear details do backend (Map<String, String>) para Record<string, string>
+      if (data.details && typeof data.details === 'object') {
+        apiError.details = data.details as Record<string, string>;
+      }
       apiError.path = error.config?.url;
     } else if (error.request) {
       // Requisição feita mas sem resposta
-      apiError.message = 'Servidor não respondeu. Verifique sua conexão.';
+      apiError.message = 'Servidor não respondeu. Verifique se o backend está rodando em http://localhost:8080 e se o proxy do Vite está configurado corretamente.';
     } else {
       // Erro ao configurar requisição
       apiError.message = error.message || 'Erro desconhecido';

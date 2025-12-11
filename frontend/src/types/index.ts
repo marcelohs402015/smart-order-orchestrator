@@ -59,6 +59,7 @@ export interface CreateOrderRequest {
   items: OrderItemRequest[];
   paymentMethod: string;
   currency?: string;
+  idempotencyKey?: string;
 }
 
 export interface OrderResponse {
@@ -89,7 +90,10 @@ export interface CreateOrderResponse {
 
 export interface ApiError {
   message: string;
+  status?: number;
+  error?: string;
   errors?: Record<string, string[]>;
+  details?: Record<string, string>;
   timestamp?: string;
   path?: string;
 }

@@ -17,10 +17,11 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { OrderCard } from '../components/OrderCard';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { Alert } from '../components/ui/Alert';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
-  const { orders, loading, fetchOrders } = useOrderStore();
+  const { orders, loading, error, fetchOrders, clearError } = useOrderStore();
 
   useEffect(() => {
     fetchOrders();
@@ -41,6 +42,67 @@ export const DashboardPage = () => {
           Visão geral do sistema de pedidos
         </p>
       </div>
+
+      {error && (
+        <Alert variant="error" onClose={clearError} className="mb-6">
+          <div>
+            <p className="font-semibold mb-1">Erro ao carregar dados</p>
+            <p>{error.message}</p>
+            {error.status === 500 && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded text-sm">
+                <p className="font-medium mb-2">O backend está respondendo, mas ocorreu um erro interno.</p>
+                <p className="mb-2 text-gray-700">Possíveis causas:</p>
+                <ul className="list-disc list-inside space-y-1 text-gray-700">
+                  <li>Banco de dados não está conectado ou configurado corretamente</li>
+                  <li>Erro na consulta ao banco de dados (verifique se as tabelas existem)</li>
+                  <li>Erro na conversão de dados (verifique os logs do backend)</li>
+                  <li>Problema na configuração do Spring Boot</li>
+                </ul>
+                <p className="mt-2 text-gray-600">
+                  <strong>Status:</strong> {error.status} | <strong>Path:</strong> {error.path || 'N/A'}
+                </p>
+                <p className="mt-2 text-xs text-gray-500">
+                  💡 Dica: Verifique os logs do backend em http://localhost:8080 para mais detalhes sobre o erro.
+                </p>
+                <div className="mt-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => fetchOrders()}
+                    disabled={loading === 'loading'}
+                  >
+                    Tentar Novamente
+                  </Button>
+                </div>
+              </div>
+            )}
+            {error.details && Object.keys(error.details).length > 0 && (
+              <div className="mt-2 text-sm">
+                <p className="font-medium mb-1">Detalhes do erro:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  {Object.entries(error.details).map(([field, message]) => (
+                    <li key={field}>
+                      <strong>{field}:</strong> {message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {error.status !== 500 && (
+              <div className="mt-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => fetchOrders()}
+                  disabled={loading === 'loading'}
+                >
+                  Tentar Novamente
+                </Button>
+              </div>
+            )}
+          </div>
+        </Alert>
+      )}
 
       {loading === 'loading' ? (
         <div className="flex items-center justify-center py-12">

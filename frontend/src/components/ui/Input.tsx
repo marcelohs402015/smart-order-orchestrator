@@ -16,11 +16,13 @@ import { cn } from '../../utils';
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  helperText?: string;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, className, id, ...props }, ref) => {
+  ({ label, error, helperText, className, id, ...props }, ref) => {
     const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    const hasHelperContent = error || helperText;
 
     return (
       <div className="w-full">
@@ -45,16 +47,24 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             className
           )}
           aria-invalid={error ? 'true' : 'false'}
-          aria-describedby={error ? `${inputId}-error` : undefined}
+          aria-describedby={hasHelperContent ? `${inputId}-helper` : undefined}
           {...props}
         />
         {error && (
           <p
-            id={`${inputId}-error`}
+            id={`${inputId}-helper`}
             className="mt-1 text-sm text-red-600"
             role="alert"
           >
             {error}
+          </p>
+        )}
+        {!error && helperText && (
+          <p
+            id={`${inputId}-helper`}
+            className="mt-1 text-sm text-gray-500"
+          >
+            {helperText}
           </p>
         )}
       </div>

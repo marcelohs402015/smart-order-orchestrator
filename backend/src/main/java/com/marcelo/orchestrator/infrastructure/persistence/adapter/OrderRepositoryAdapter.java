@@ -68,7 +68,8 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
     public Optional<Order> findById(UUID id) {
         log.debug("Finding order by ID: {}", id);
         
-        return jpaOrderRepository.findById(id)
+        // Usa query com JOIN FETCH para carregar items junto (evita LazyInitializationException)
+        return jpaOrderRepository.findByIdWithItems(id)
             .map(orderMapper::toDomain);
     }
     
@@ -84,7 +85,8 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
     public List<Order> findAll() {
         log.debug("Finding all orders");
         
-        return jpaOrderRepository.findAll().stream()
+        // Usa query com JOIN FETCH para carregar items junto (evita LazyInitializationException)
+        return jpaOrderRepository.findAllWithItems().stream()
             .map(orderMapper::toDomain)
             .collect(Collectors.toList());
     }

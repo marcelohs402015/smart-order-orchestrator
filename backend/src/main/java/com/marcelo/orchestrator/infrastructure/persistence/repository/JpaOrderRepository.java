@@ -37,38 +37,58 @@ import java.util.UUID;
 public interface JpaOrderRepository extends JpaRepository<OrderEntity, UUID> {
     
     /**
-     * Busca pedido pelo número do pedido.
-     * Spring Data JPA gera query automaticamente baseado no nome do método.
+     * Busca pedido pelo número do pedido com itens carregados (eager loading).
+     * Resolve problema de LazyInitializationException ao acessar items fora da sessão.
      * 
      * @param orderNumber Número do pedido
-     * @return Optional contendo OrderEntity se encontrado
+     * @return Optional contendo OrderEntity com itens carregados
      */
-    Optional<OrderEntity> findByOrderNumber(String orderNumber);
+    @Query("SELECT o FROM OrderEntity o LEFT JOIN FETCH o.items WHERE o.orderNumber = :orderNumber")
+    Optional<OrderEntity> findByOrderNumber(@Param("orderNumber") String orderNumber);
     
     /**
-     * Busca pedidos por status.
+     * Busca pedidos por status com itens carregados (eager loading).
+     * Resolve problema de LazyInitializationException ao acessar items fora da sessão.
      * 
      * @param status Status desejado
-     * @return Lista de pedidos com o status especificado
+     * @return Lista de pedidos com o status especificado e itens carregados
      */
-    List<OrderEntity> findByStatus(com.marcelo.orchestrator.domain.model.OrderStatus status);
+    @Query("SELECT DISTINCT o FROM OrderEntity o LEFT JOIN FETCH o.items WHERE o.status = :status ORDER BY o.createdAt DESC")
+    List<OrderEntity> findByStatus(@Param("status") com.marcelo.orchestrator.domain.model.OrderStatus status);
     
     /**
-     * Busca pedidos de um cliente.
+     * Busca pedidos de um cliente com itens carregados (eager loading).
+     * Resolve problema de LazyInitializationException ao acessar items fora da sessão.
      * 
      * @param customerId ID do cliente
-     * @return Lista de pedidos do cliente
+     * @return Lista de pedidos do cliente com itens carregados
      */
-    List<OrderEntity> findByCustomerId(UUID customerId);
+    @Query("SELECT DISTINCT o FROM OrderEntity o LEFT JOIN FETCH o.items WHERE o.customerId = :customerId ORDER BY o.createdAt DESC")
+    List<OrderEntity> findByCustomerId(@Param("customerId") UUID customerId);
     
     /**
-     * Query customizada para buscar pedidos com itens (eager loading).
-     * Útil quando precisa carregar itens junto com pedido.
+     * Busca pedido por ID com itens carregados (eager loading).
+     * Resolve problema de LazyInitializationException ao acessar items fora da sessão.
      * 
      * @param orderId ID do pedido
      * @return Optional contendo OrderEntity com itens carregados
      */
     @Query("SELECT o FROM OrderEntity o LEFT JOIN FETCH o.items WHERE o.id = :orderId")
     Optional<OrderEntity> findByIdWithItems(@Param("orderId") UUID orderId);
+    
+    /**
+     * Busca pedido por ID (método padrão do JpaRepository).
+     * Usa findByIdWithItems quando precisar carregar items.
+     */
+    Optional<OrderEntity> findById(UUID orderId);
+    
+    /**
+     * Query customizada para buscar todos os pedidos com itens (eager loading).
+     * Resolve problema de LazyInitializationException ao acessar items fora da sessão.
+     * 
+     * @return Lista de OrderEntity com itens carregados
+     */
+    @Query("SELECT DISTINCT o FROM OrderEntity o LEFT JOIN FETCH o.items ORDER BY o.createdAt DESC")
+    List<OrderEntity> findAllWithItems();
 }
 

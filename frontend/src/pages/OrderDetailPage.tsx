@@ -38,10 +38,27 @@ export const OrderDetailPage = () => {
   }
 
   if (error || !currentOrder) {
+    const isNotFound = error?.status === 404;
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
         <Alert variant="error" onClose={clearError}>
-          {error?.message || 'Pedido não encontrado'}
+          <div>
+            <p className="font-semibold mb-1">
+              {isNotFound ? 'Pedido não encontrado' : 'Erro ao carregar pedido'}
+            </p>
+            <p>{error?.message || 'Pedido não encontrado'}</p>
+            {error?.details && Object.keys(error.details).length > 0 && (
+              <div className="mt-2 text-sm">
+                <ul className="list-disc list-inside space-y-1">
+                  {Object.entries(error.details).map(([field, message]) => (
+                    <li key={field}>
+                      <strong>{field}:</strong> {message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </Alert>
         <div className="mt-6">
           <Button onClick={() => navigate('/orders')}>

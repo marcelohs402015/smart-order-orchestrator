@@ -34,12 +34,14 @@ interface OrderState {
   currentOrder: OrderResponse | null;
   loading: LoadingState;
   error: ApiError | null;
+  validationErrors: Record<string, string> | null; // Erros de validação por campo
 
   // Actions
   fetchOrders: () => Promise<void>;
   fetchOrderById: (id: string) => Promise<void>;
   createOrder: (request: CreateOrderRequest) => Promise<CreateOrderResponse>;
   clearError: () => void;
+  clearValidationErrors: () => void;
   clearCurrentOrder: () => void;
 }
 
@@ -49,69 +51,90 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   currentOrder: null,
   loading: 'idle',
   error: null,
+  validationErrors: null,
 
   // Buscar todos os pedidos
   fetchOrders: async () => {
-    set({ loading: 'loading', error: null });
+    set({ loading: 'loading', error: null, validationErrors: null });
     try {
       const orders = await orderService.getAllOrders();
-      set({ orders, loading: 'success', error: null });
+      set({ orders, loading: 'success', error: null, validationErrors: null });
     } catch (error) {
       const apiError = error as ApiError;
       set({
         loading: 'error',
         error: apiError,
+        validationErrors: apiError.details || null,
       });
     }
   },
 
   // Buscar pedido por ID
   fetchOrderById: async (id: string) => {
-    set({ loading: 'loading', error: null, currentOrder: null });
+    set({ loading: 'loading', error: null, currentOrder: null, validationErrors: null });
     try {
       const order = await orderService.getOrderById(id);
-      set({ currentOrder: order, loading: 'success', error: null });
+      set({ currentOrder: order, loading: 'success', error: null, validationErrors: null });
     } catch (error) {
       const apiError = error as ApiError;
       set({
         loading: 'error',
         error: apiError,
         currentOrder: null,
+        validationErrors: apiError.details || null,
       });
     }
   },
 
   // Criar novo pedido
   createOrder: async (request: CreateOrderRequest) => {
-    set({ loading: 'loading', error: null });
+    set({ loading: 'loading', error: null, validationErrors: null });
     try {
       const response = await orderService.createOrder(request);
       
       if (response.success && response.order) {
-        // Adicionar novo pedido à lista
+        // Sucesso: Pedido criado com sucesso (201)
         const currentOrders = get().orders;
         set({
           orders: [response.order, ...currentOrders],
           currentOrder: response.order,
           loading: 'success',
           error: null,
+          validationErrors: null,
+        });
+      } else if (response.sagaExecutionId && !response.success) {
+        // Saga em progresso (202 ACCEPTED) - não é erro, mas estado intermediário
+        // O backend retorna 202 quando a saga já está em progresso (idempotência)
+        set({
+          loading: 'success', // Não é erro, mas sucesso parcial
+          error: {
+            message: response.errorMessage || 'Pedido está sendo processado. Aguarde a conclusão.',
+            status: 202,
+          },
+          validationErrors: null,
         });
       } else {
-        // Pedido criado mas com erro na saga
+        // Falha na saga (400)
         set({
           loading: 'error',
           error: {
             message: response.errorMessage || 'Erro ao processar pedido',
+            status: 400,
           },
+          validationErrors: null,
         });
       }
       
       return response;
     } catch (error) {
       const apiError = error as ApiError;
+      // Extrair erros de validação (details) se disponível
+      const validationErrors = apiError.details || null;
+      
       set({
         loading: 'error',
         error: apiError,
+        validationErrors,
       });
       throw error;
     }
@@ -119,7 +142,12 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
   // Limpar erro
   clearError: () => {
-    set({ error: null });
+    set({ error: null, validationErrors: null });
+  },
+
+  // Limpar erros de validação
+  clearValidationErrors: () => {
+    set({ validationErrors: null });
   },
 
   // Limpar pedido atual

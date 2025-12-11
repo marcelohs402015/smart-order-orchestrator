@@ -4,6 +4,7 @@ import com.marcelo.orchestrator.application.usecase.AnalyzeRiskUseCase;
 import com.marcelo.orchestrator.application.usecase.CreateOrderUseCase;
 import com.marcelo.orchestrator.application.usecase.ProcessPaymentUseCase;
 import com.marcelo.orchestrator.domain.model.*;
+import com.marcelo.orchestrator.domain.port.EventPublisherPort;
 import com.marcelo.orchestrator.domain.port.OrderRepositoryPort;
 import com.marcelo.orchestrator.infrastructure.persistence.entity.SagaExecutionEntity;
 import com.marcelo.orchestrator.infrastructure.persistence.repository.JpaSagaExecutionRepository;
@@ -53,6 +54,9 @@ class OrderSagaOrchestratorTest {
     
     @Mock
     private JpaSagaExecutionRepository sagaRepository;
+    
+    @Mock
+    private EventPublisherPort eventPublisher;
     
     @InjectMocks
     private OrderSagaOrchestrator orchestrator;
