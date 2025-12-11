@@ -437,7 +437,7 @@ public class OrderSagaOrchestrator {
 
 **Melhoria Planejada:**
 - Processamento assíncrono de sagas
-- Fila de processamento (Kafka, RabbitMQ)
+- Fila de processamento (Pub/Sub GCP, RabbitMQ)
 - Workers dedicados para processar sagas
 
 **Benefício:**

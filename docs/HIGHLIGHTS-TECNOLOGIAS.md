@@ -34,7 +34,7 @@
 **O que é:** Padrão que encapsula a criação de objetos, centralizando a lógica de instanciação.
 
 **Implementação no Projeto:**
-- **EventPublisherFactory:** Cria adapters de eventos baseado em configuração (Kafka, Pub/Sub, RabbitMQ, In-Memory)
+- **EventPublisherFactory:** Cria adapters de eventos baseado em configuração (Pub/Sub GCP, RabbitMQ, In-Memory)
 
 **Por que usar:**
 - ✅ **Flexibilidade:** Trocar message broker via configuração sem alterar código
@@ -50,7 +50,7 @@
 ```java
 // Factory cria o adapter correto baseado em configuração
 EventPublisherPort publisher = eventPublisherFactory.create();
-// publisher pode ser Kafka, Pub/Sub, RabbitMQ, etc. - código não precisa saber qual
+// publisher pode ser Pub/Sub GCP, RabbitMQ, In-Memory, etc. - código não precisa saber qual
 ```
 
 **📚 Documentação:**
@@ -67,10 +67,10 @@ EventPublisherPort publisher = eventPublisherFactory.create();
 - **OrderRepositoryAdapter:** Adapta OrderRepositoryPort (domínio) para JPA (infraestrutura)
 - **AbacatePayAdapter:** Adapta PaymentGatewayPort (domínio) para API REST (infraestrutura)
 - **OpenAIRiskAnalysisAdapter:** Adapta RiskAnalysisPort (domínio) para OpenAI API (infraestrutura)
-- **KafkaEventPublisherAdapter, PubSubEventPublisherAdapter, etc.:** Adaptam EventPublisherPort para diferentes message brokers
+- **PubSubEventPublisherAdapter, RabbitMqEventPublisherAdapter, InMemoryEventPublisherAdapter:** Adaptam EventPublisherPort para diferentes message brokers
 
 **Por que usar:**
-- ✅ **Isolamento:** Domínio não conhece JPA, HTTP, Kafka
+- ✅ **Isolamento:** Domínio não conhece JPA, HTTP, Pub/Sub
 - ✅ **Troca de Implementação:** Pode trocar PostgreSQL por MongoDB sem alterar domínio
 - ✅ **Testabilidade:** Fácil mockar adapters em testes
 - ✅ **Hexagonal Architecture:** Core do padrão Ports and Adapters
@@ -217,7 +217,7 @@ if (order.getStatus().canTransitionTo(OrderStatus.PAID)) {
 **O que é:** Padrão que define uma família de algoritmos, encapsula cada um e os torna intercambiáveis.
 
 **Implementação no Projeto:**
-- **Event Publishers:** Diferentes estratégias (Kafka, Pub/Sub, RabbitMQ) implementam a mesma interface
+- **Event Publishers:** Diferentes estratégias (Pub/Sub GCP, RabbitMQ, In-Memory) implementam a mesma interface
 - **Payment Gateways:** Diferentes gateways podem ser trocados (AbacatePay, Stripe, PayPal)
 
 **Por que usar:**
@@ -373,7 +373,7 @@ case SQS -> new SqsEventPublisherAdapter();
 **O que é:** Objetos de uma superclasse devem ser substituíveis por objetos de suas subclasses sem quebrar a aplicação.
 
 **Aplicação no Projeto:**
-- ✅ **Adapters:** Qualquer adapter (Kafka, Pub/Sub, RabbitMQ) pode substituir EventPublisherPort sem quebrar código
+- ✅ **Adapters:** Qualquer adapter (Pub/Sub GCP, RabbitMQ, In-Memory) pode substituir EventPublisherPort sem quebrar código
 - ✅ **Repositories:** OrderRepositoryAdapter pode ser substituído por MongoDBAdapter sem alterar domínio
 - ✅ **Payment Gateways:** AbacatePayAdapter pode ser substituído por StripeAdapter sem alterar código cliente
 
@@ -384,9 +384,9 @@ case SQS -> new SqsEventPublisherAdapter();
 **💡 Exemplo:**
 ```java
 // ✅ Qualquer implementação pode substituir a interface
-EventPublisherPort publisher = new KafkaEventPublisherAdapter();
-EventPublisherPort publisher = new PubSubEventPublisherAdapter();
-EventPublisherPort publisher = new RabbitMqEventPublisherAdapter();
+EventPublisherPort publisher = new PubSubEventPublisherAdapter(); // Produção (GCP)
+EventPublisherPort publisher = new InMemoryEventPublisherAdapter(); // Testes
+EventPublisherPort publisher = new RabbitMqEventPublisherAdapter(); // Alternativa
 // Código cliente não precisa mudar!
 ```
 
@@ -669,7 +669,7 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
 **O que é:** Padrão arquitetural que isola o domínio das tecnologias externas.
 
 **Por que usar:**
-- ✅ **Isolamento:** Domínio não conhece JPA, HTTP, Kafka
+- ✅ **Isolamento:** Domínio não conhece JPA, HTTP, Pub/Sub
 - ✅ **Testabilidade:** Fácil mockar adapters
 - ✅ **Flexibilidade:** Trocar implementações sem alterar domínio
 
@@ -736,21 +736,33 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
 
 ### Factory Pattern para Message Brokers
 
-**O que é:** Factory que cria adapters de eventos baseado em configuração (Kafka, Pub/Sub, RabbitMQ, In-Memory).
+**O que é:** Factory que cria adapters de eventos baseado em configuração (Pub/Sub GCP, RabbitMQ, In-Memory).
 
 **Por que usar:**
 - ✅ **Desacoplamento:** Serviços não conhecem uns aos outros
 - ✅ **Escalabilidade:** Processamento assíncrono
 - ✅ **Flexibilidade:** Trocar broker via configuração
 
+**Message Broker Principal:**
+- **Google Cloud Pub/Sub:** Broker escolhido para produção (GCP nativo, serverless)
+- **In-Memory:** Usado para desenvolvimento e testes
+- **RabbitMQ:** Suportado para ambientes on-premise ou híbridos
+
 **📁 Código:**
 - Factory: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/factory/EventPublisherFactory.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/factory/EventPublisherFactory.java)
 - Port (Interface): [`backend/src/main/java/com/marcelo/orchestrator/domain/port/EventPublisherPort.java`](../backend/src/main/java/com/marcelo/orchestrator/domain/port/EventPublisherPort.java)
-- Kafka Adapter: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/KafkaEventPublisherAdapter.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/KafkaEventPublisherAdapter.java)
-- Pub/Sub Adapter: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/PubSubEventPublisherAdapter.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/PubSubEventPublisherAdapter.java)
-- RabbitMQ Adapter: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/RabbitMqEventPublisherAdapter.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/RabbitMqEventPublisherAdapter.java)
-- In-Memory Adapter: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/InMemoryEventPublisherAdapter.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/InMemoryEventPublisherAdapter.java)
+- Pub/Sub Adapter: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/PubSubEventPublisherAdapter.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/PubSubEventPublisherAdapter.java) - **Produção (GCP)**
+- In-Memory Adapter: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/InMemoryEventPublisherAdapter.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/InMemoryEventPublisherAdapter.java) - **Desenvolvimento/Testes**
+- RabbitMQ Adapter: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/RabbitMqEventPublisherAdapter.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/RabbitMqEventPublisherAdapter.java) - **Alternativa**
 - Configuração: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/config/EventPublisherConfig.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/config/EventPublisherConfig.java)
+
+**Configuração:**
+```yaml
+app:
+  message:
+    broker:
+      type: PUBSUB  # ou IN_MEMORY, RABBITMQ
+```
 
 **📁 Eventos de Domínio:**
 - OrderCreatedEvent: [`backend/src/main/java/com/marcelo/orchestrator/domain/event/saga/OrderCreatedEvent.java`](../backend/src/main/java/com/marcelo/orchestrator/domain/event/saga/OrderCreatedEvent.java)
