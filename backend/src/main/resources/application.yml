@@ -72,6 +72,7 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: true
+    debug: false
 
 # ============================================================================
 # AbacatePay Configuration
@@ -178,6 +179,13 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# ============================================================================
+# Debug Configuration
+# ============================================================================
+# debug=true: Mostra relatório completo de autoconfiguração do Spring Boot
+# Útil para entender quais beans foram criados e quais foram excluídos
+debug: false
 
 # ============================================================================
 # Server Configuration

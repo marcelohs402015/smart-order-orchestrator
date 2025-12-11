@@ -1,8 +1,0 @@
-C:\projetos\java\projetos\smart-order-orchestrator\backend\src\test\java\com\marcelo\orchestrator\infrastructure\payment\adapter\AbacatePayAdapterTest.java
-C:\projetos\java\projetos\smart-order-orchestrator\backend\src\test\java\com\marcelo\orchestrator\application\usecase\AnalyzeRiskUseCaseTest.java
-C:\projetos\java\projetos\smart-order-orchestrator\backend\src\test\java\com\marcelo\orchestrator\domain\model\MoneyTest.java
-C:\projetos\java\projetos\smart-order-orchestrator\backend\src\test\java\com\marcelo\orchestrator\infrastructure\ai\adapter\OpenAIRiskAnalysisAdapterTest.java
-C:\projetos\java\projetos\smart-order-orchestrator\backend\src\test\java\com\marcelo\orchestrator\domain\model\OrderTest.java
-C:\projetos\java\projetos\smart-order-orchestrator\backend\src\test\java\com\marcelo\orchestrator\infrastructure\persistence\adapter\OrderRepositoryAdapterTest.java
-C:\projetos\java\projetos\smart-order-orchestrator\backend\src\test\java\com\marcelo\orchestrator\application\saga\OrderSagaOrchestratorTest.java
-C:\projetos\java\projetos\smart-order-orchestrator\backend\src\test\java\com\marcelo\orchestrator\domain\model\OrderStatusTest.java
