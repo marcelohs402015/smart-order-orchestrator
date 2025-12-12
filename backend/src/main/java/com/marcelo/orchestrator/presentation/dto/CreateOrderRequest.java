@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +30,7 @@ import java.util.UUID;
  */
 @Getter
 @Builder
+@Jacksonized
 public class CreateOrderRequest {
     
     @NotNull(message = "Customer ID is required")

@@ -15,6 +15,7 @@ import {
   CreateOrderResponse,
   OrderResponse,
   ApiError,
+  OrderStatus,
 } from '../types';
 
 /**
@@ -39,10 +40,18 @@ export const createOrder = async (
   request: CreateOrderRequest
 ): Promise<CreateOrderResponse> => {
   try {
+    // URL final será: baseURL + '/orders' = '/api/v1' + '/orders' = '/api/v1/orders'
+    // Com proxy do Vite: '/api/v1/orders' → 'http://localhost:8080/api/v1/orders'
     const response = await apiClient.post<CreateOrderResponse>('/orders', request);
     return response.data;
-  } catch (error) {
-    // Re-throw para que o store possa tratar adequadamente
+  } catch (error: any) {
+    // Se for um CreateOrderResponse com falha (saga falhou), retornar diretamente
+    // O interceptor do Axios marca isso com isCreateOrderResponse: true
+    if (error?.isCreateOrderResponse && error.data) {
+      return error.data as CreateOrderResponse;
+    }
+    
+    // Caso contrário, re-throw para que o store possa tratar adequadamente
     throw error;
   }
 };
@@ -86,14 +95,16 @@ export const getOrderByNumber = async (
 };
 
 /**
- * Lista todos os pedidos do sistema.
+ * Lista todos os pedidos do sistema ou filtra por status.
  * 
+ * @param status Status opcional para filtrar pedidos (PENDING, PAID, PAYMENT_FAILED, CANCELED)
  * @returns Promise com lista de pedidos (pode ser vazia se não houver pedidos)
  * @throws ApiError se houver erro na requisição
  */
-export const getAllOrders = async (): Promise<OrderResponse[]> => {
+export const getAllOrders = async (status?: OrderStatus): Promise<OrderResponse[]> => {
   try {
-    const response = await apiClient.get<OrderResponse[]>('/orders');
+    const params = status ? { status } : {};
+    const response = await apiClient.get<OrderResponse[]>('/orders', { params });
     return response.data;
   } catch (error) {
     // Re-throw para que o store possa tratar adequadamente

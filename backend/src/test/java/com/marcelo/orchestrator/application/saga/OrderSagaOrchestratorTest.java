@@ -165,7 +165,7 @@ class OrderSagaOrchestratorTest {
     }
     
     @Test
-    @DisplayName("Deve compensar quando pagamento falhar")
+    @DisplayName("Deve compensar quando pagamento falhar mantendo status PAYMENT_FAILED")
     void shouldCompensateWhenPaymentFails() {
         // Arrange
         Order paymentFailedOrder = Order.builder()
@@ -194,11 +194,12 @@ class OrderSagaOrchestratorTest {
         assertNotNull(result.getErrorMessage());
         assertEquals("Payment failed", result.getErrorMessage());
         
-        // Verificar que pedido foi cancelado (compensação)
+        // Verificar que pedido mantém status PAYMENT_FAILED (não muda para CANCELED)
+        // Isso permite que o frontend identifique corretamente a causa da falha
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
         verify(orderRepository, atLeastOnce()).save(orderCaptor.capture());
         Order savedOrder = orderCaptor.getValue();
-        assertEquals(OrderStatus.CANCELED, savedOrder.getStatus());
+        assertEquals(OrderStatus.PAYMENT_FAILED, savedOrder.getStatus());
         
         // Verificar que análise de risco não foi executada
         verify(analyzeRiskUseCase, never()).execute(any());

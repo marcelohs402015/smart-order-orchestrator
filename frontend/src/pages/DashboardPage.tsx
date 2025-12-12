@@ -12,7 +12,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOrderStore } from '../store/orderStore';
-import { OrderStatus, RiskLevel } from '../types';
+import { OrderStatus } from '../types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { OrderCard } from '../components/OrderCard';
@@ -24,14 +24,16 @@ export const DashboardPage = () => {
   const { orders, loading, error, fetchOrders, clearError } = useOrderStore();
 
   useEffect(() => {
+    // Buscar todos os pedidos para estatísticas
     fetchOrders();
   }, [fetchOrders]);
 
-  // Estatísticas
+  // Estatísticas (calculadas a partir de todos os pedidos)
   const totalOrders = orders.length;
   const paidOrders = orders.filter((o) => o.status === OrderStatus.PAID).length;
   const pendingOrders = orders.filter((o) => o.status === OrderStatus.PENDING).length;
-  const highRiskOrders = orders.filter((o) => o.riskLevel === RiskLevel.HIGH).length;
+  const failedPaymentOrders = orders.filter((o) => o.status === OrderStatus.PAYMENT_FAILED);
+  const failedPaymentCount = failedPaymentOrders.length;
   const recentOrders = orders.slice(0, 5);
 
   return (
@@ -132,11 +134,53 @@ export const DashboardPage = () => {
             </Card>
             <Card padding="md">
               <div className="text-center">
-                <p className="text-3xl font-bold text-red-600">{highRiskOrders}</p>
-                <p className="text-sm text-gray-500 mt-1">Alto Risco</p>
+                <p className="text-3xl font-bold text-orange-600">{failedPaymentCount}</p>
+                <p className="text-sm text-gray-500 mt-1">Falha de Pagamento</p>
               </div>
             </Card>
           </div>
+
+          {/* Alerta de Pedidos com Falha de Pagamento */}
+          {failedPaymentCount > 0 && (
+            <Card className="mb-8 border-2 border-red-300 bg-red-50">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-red-900 flex items-center gap-2">
+                    <span>⚠️</span> Atenção: Pedidos com Falha de Pagamento
+                  </h2>
+                  <p className="text-sm text-red-700 mt-1">
+                    {failedPaymentCount} {failedPaymentCount === 1 ? 'pedido' : 'pedidos'} com pagamento não processado
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/orders')}
+                >
+                  Ver na Lista
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {failedPaymentOrders.slice(0, 3).map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    onClick={() => navigate(`/orders/${order.id}`)}
+                  />
+                ))}
+              </div>
+              {failedPaymentCount > 3 && (
+                <div className="mt-4 text-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/orders')}
+                  >
+                    Ver todos os {failedPaymentCount} pedidos com falha
+                  </Button>
+                </div>
+              )}
+            </Card>
+          )}
 
           {/* Ações Rápidas */}
           <Card className="mb-8">

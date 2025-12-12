@@ -96,6 +96,7 @@ export interface ApiError {
   details?: Record<string, string>;
   timestamp?: string;
   path?: string;
+  isBusinessError?: boolean; // true se for erro de negócio (saga falhou), false se for erro de validação
 }
 
 // ============================================================================

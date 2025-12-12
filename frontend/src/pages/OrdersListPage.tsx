@@ -20,7 +20,9 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Alert } from '../components/ui/Alert';
 import { Card } from '../components/ui/Card';
 import * as orderService from '../services/orderService';
-import { OrderResponse, ApiError } from '../types';
+import { OrderResponse, ApiError, OrderStatus } from '../types';
+
+type StatusFilter = 'ALL' | OrderStatus;
 
 export const OrdersListPage = () => {
   const navigate = useNavigate();
@@ -29,12 +31,33 @@ export const OrdersListPage = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchResult, setSearchResult] = useState<OrderResponse | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
 
   const isLoading = loading === 'loading';
-
+  
+  // Buscar pedidos quando o filtro mudar
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    const statusToFetch = statusFilter === 'ALL' ? undefined : statusFilter;
+    fetchOrders(statusToFetch);
+  }, [statusFilter, fetchOrders]);
+  
+  // Separar pedidos com falha de pagamento (para a seção destacada)
+  // Buscar separadamente para mostrar na seção destacada
+  const [failedPaymentOrders, setFailedPaymentOrders] = useState<OrderResponse[]>([]);
+  
+  useEffect(() => {
+    // Buscar pedidos com falha de pagamento separadamente para a seção destacada
+    const fetchFailedPayments = async () => {
+      try {
+        const failed = await orderService.getAllOrders(OrderStatus.PAYMENT_FAILED);
+        setFailedPaymentOrders(failed);
+      } catch (err) {
+        // Silenciar erro, não é crítico para a funcionalidade principal
+        console.warn('Erro ao buscar pedidos com falha de pagamento:', err);
+      }
+    };
+    fetchFailedPayments();
+  }, []);
 
   const handleSearchByNumber = async () => {
     if (!searchNumber.trim()) {
@@ -197,23 +220,132 @@ export const OrdersListPage = () => {
         )}
       </Card>
 
-      {orders.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg mb-4">Nenhum pedido encontrado</p>
-          <Button onClick={() => navigate('/orders/create')}>
-            Criar Primeiro Pedido
+      {/* Seção de Pedidos com Falha de Pagamento */}
+      {failedPaymentOrders.length > 0 && (
+        <Card className="mb-6 border-2 border-red-300 bg-red-50">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-red-900 flex items-center gap-2">
+                <span>⚠️</span> Pedidos com Falha de Pagamento
+              </h2>
+              <p className="text-sm text-red-700 mt-1">
+                {failedPaymentOrders.length} {failedPaymentOrders.length === 1 ? 'pedido' : 'pedidos'} com pagamento não processado
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setStatusFilter(OrderStatus.PAYMENT_FAILED)}
+            >
+              Ver Todos
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {failedPaymentOrders.slice(0, 3).map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                onClick={() => navigate(`/orders/${order.id}`)}
+              />
+            ))}
+          </div>
+          {failedPaymentOrders.length > 3 && (
+            <div className="mt-4 text-center">
+              <Button
+                variant="outline"
+                onClick={() => setStatusFilter(OrderStatus.PAYMENT_FAILED)}
+              >
+                Ver todos os {failedPaymentOrders.length} pedidos com falha
+              </Button>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Filtros por Status */}
+      <Card className="mb-6">
+        <h2 className="text-xl font-semibold mb-4">Filtros</h2>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={statusFilter === 'ALL' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setStatusFilter('ALL')}
+          >
+            Todos ({orders.length})
+          </Button>
+          <Button
+            variant={statusFilter === OrderStatus.PENDING ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setStatusFilter(OrderStatus.PENDING)}
+          >
+            Pendentes ({orders.filter(o => o.status === OrderStatus.PENDING).length})
+          </Button>
+          <Button
+            variant={statusFilter === OrderStatus.PAID ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setStatusFilter(OrderStatus.PAID)}
+          >
+            Pagos ({orders.filter(o => o.status === OrderStatus.PAID).length})
+          </Button>
+          <Button
+            variant={statusFilter === OrderStatus.PAYMENT_FAILED ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setStatusFilter(OrderStatus.PAYMENT_FAILED)}
+          >
+            Falha de Pagamento ({failedPaymentOrders.length})
+          </Button>
+          <Button
+            variant={statusFilter === OrderStatus.CANCELED ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setStatusFilter(OrderStatus.CANCELED)}
+          >
+            Cancelados ({orders.filter(o => o.status === OrderStatus.CANCELED).length})
           </Button>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {orders.map((order) => (
-            <OrderCard
-              key={order.id}
-              order={order}
-              onClick={() => navigate(`/orders/${order.id}`)}
-            />
-          ))}
+      </Card>
+
+      {/* Lista de Pedidos Filtrados */}
+      {orders.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg mb-4">
+            {statusFilter === 'ALL' 
+              ? 'Nenhum pedido encontrado'
+              : `Nenhum pedido com status "${statusFilter}" encontrado`}
+          </p>
+          {statusFilter !== 'ALL' && (
+            <Button
+              variant="outline"
+              onClick={() => setStatusFilter('ALL')}
+            >
+              Ver Todos os Pedidos
+            </Button>
+          )}
+          {statusFilter === 'ALL' && (
+            <Button onClick={() => navigate('/orders/create')}>
+              Criar Primeiro Pedido
+            </Button>
+          )}
         </div>
+      ) : (
+        <>
+          {statusFilter !== 'ALL' && (
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                Mostrando {orders.length} {orders.length === 1 ? 'pedido' : 'pedidos'} 
+                {` com status "${statusFilter}"`}
+              </p>
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {orders.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                onClick={() => navigate(`/orders/${order.id}`)}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

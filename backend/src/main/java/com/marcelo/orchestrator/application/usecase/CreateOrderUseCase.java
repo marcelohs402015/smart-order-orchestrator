@@ -6,6 +6,7 @@ import com.marcelo.orchestrator.domain.port.OrderRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -61,11 +62,15 @@ public class CreateOrderUseCase {
      * <p>Método transacional que garante consistência: se notificação falhar,
      * a transação pode ser revertida (dependendo da configuração).</p>
      * 
+     * <p><strong>Padrão Saga:</strong> Usa REQUIRES_NEW para garantir transação
+     * independente que faz commit imediato, permitindo compensação manual se
+     * passos subsequentes falharem.</p>
+     * 
      * @param command Dados do pedido a ser criado
      * @return Pedido criado e persistido
      * @throws IllegalArgumentException se dados inválidos
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Order execute(CreateOrderCommand command) {
         log.info("Creating order for customer: {}", command.getCustomerId());
         

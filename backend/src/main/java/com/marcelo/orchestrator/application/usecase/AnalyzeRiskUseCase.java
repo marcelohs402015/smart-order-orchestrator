@@ -8,6 +8,7 @@ import com.marcelo.orchestrator.domain.port.RiskAnalysisResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -51,11 +52,15 @@ public class AnalyzeRiskUseCase {
     /**
      * Analisa risco de um pedido utilizando IA.
      * 
+     * <p><strong>Padrão Saga:</strong> Usa REQUIRES_NEW para garantir transação
+     * independente que faz commit imediato, permitindo compensação manual se
+     * passos subsequentes falharem.</p>
+     * 
      * @param command Command com ID do pedido
      * @return Pedido atualizado com nível de risco
      * @throws IllegalArgumentException se pedido não encontrado ou estado inválido
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Order execute(AnalyzeRiskCommand command) {
         log.info("Analyzing risk for order: {}", command.getOrderId());
         

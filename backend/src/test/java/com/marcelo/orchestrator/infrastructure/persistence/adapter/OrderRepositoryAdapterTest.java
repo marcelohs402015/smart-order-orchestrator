@@ -108,7 +108,7 @@ class OrderRepositoryAdapterTest {
     void shouldFindOrderById() {
         // Arrange
         UUID orderId = testOrder.getId();
-        when(jpaOrderRepository.findById(orderId)).thenReturn(Optional.of(testEntity));
+        when(jpaOrderRepository.findByIdWithItems(orderId)).thenReturn(Optional.of(testEntity));
         when(orderMapper.toDomain(testEntity)).thenReturn(testOrder);
         
         // Act
@@ -117,7 +117,7 @@ class OrderRepositoryAdapterTest {
         // Assert
         assertTrue(result.isPresent());
         assertEquals(testOrder.getId(), result.get().getId());
-        verify(jpaOrderRepository).findById(orderId);
+        verify(jpaOrderRepository).findByIdWithItems(orderId);
         verify(orderMapper).toDomain(testEntity);
     }
     
@@ -126,14 +126,14 @@ class OrderRepositoryAdapterTest {
     void shouldReturnEmptyWhenOrderNotFound() {
         // Arrange
         UUID orderId = UUID.randomUUID();
-        when(jpaOrderRepository.findById(orderId)).thenReturn(Optional.empty());
+        when(jpaOrderRepository.findByIdWithItems(orderId)).thenReturn(Optional.empty());
         
         // Act
         Optional<Order> result = adapter.findById(orderId);
         
         // Assert
         assertTrue(result.isEmpty());
-        verify(jpaOrderRepository).findById(orderId);
+        verify(jpaOrderRepository).findByIdWithItems(orderId);
         verify(orderMapper, never()).toDomain(any());
     }
 }

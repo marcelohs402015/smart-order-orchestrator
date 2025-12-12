@@ -25,6 +25,7 @@ import {
   CreateOrderResponse,
   ApiError,
   LoadingState,
+  OrderStatus,
 } from '../types';
 import * as orderService from '../services/orderService';
 
@@ -37,7 +38,7 @@ interface OrderState {
   validationErrors: Record<string, string> | null; // Erros de validação por campo
 
   // Actions
-  fetchOrders: () => Promise<void>;
+  fetchOrders: (status?: OrderStatus) => Promise<void>;
   fetchOrderById: (id: string) => Promise<void>;
   createOrder: (request: CreateOrderRequest) => Promise<CreateOrderResponse>;
   clearError: () => void;
@@ -53,11 +54,11 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   error: null,
   validationErrors: null,
 
-  // Buscar todos os pedidos
-  fetchOrders: async () => {
+  // Buscar todos os pedidos (opcionalmente filtrado por status)
+  fetchOrders: async (status?: OrderStatus) => {
     set({ loading: 'loading', error: null, validationErrors: null });
     try {
-      const orders = await orderService.getAllOrders();
+      const orders = await orderService.getAllOrders(status);
       set({ orders, loading: 'success', error: null, validationErrors: null });
     } catch (error) {
       const apiError = error as ApiError;
@@ -114,12 +115,14 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           validationErrors: null,
         });
       } else {
-        // Falha na saga (400)
+        // Falha na saga (400) - erro de negócio, não de validação
+        // Exemplos: pagamento falhou, análise de risco falhou, etc.
         set({
           loading: 'error',
           error: {
-            message: response.errorMessage || 'Erro ao processar pedido',
+            message: response.errorMessage || 'Erro ao processar pedido. A saga falhou durante a execução.',
             status: 400,
+            isBusinessError: true, // Marcar como erro de negócio, não de validação
           },
           validationErrors: null,
         });

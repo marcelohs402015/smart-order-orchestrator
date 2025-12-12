@@ -110,10 +110,20 @@ public class OrderSagaOrchestrator {
      * retorna o resultado anterior ao invés de criar novo pedido. Isso previne
      * duplicação em caso de retry, timeout ou usuário clicando várias vezes.</p>
      * 
+     * <h3>Gerenciamento de Transações (Saga Pattern):</h3>
+     * <p>Este método NÃO usa @Transactional porque segue os princípios do Saga Pattern:
+     * - Cada passo (use case) é uma transação independente que faz commit imediato
+     * - Se um passo falhar, os anteriores já foram commitados (não há rollback de transação)
+     * - Compensação é executada manualmente (não via rollback de transação)
+     * - Estado da saga é persistido em transações separadas para rastreamento
+     * 
+     * <p>Isso evita o problema de "rollback-only" que ocorre com transações aninhadas
+     * e garante que cada passo seja atomicamente commitado, permitindo compensação
+     * manual se necessário.</p>
+     * 
      * @param command Command com todos os dados necessários (incluindo idempotencyKey)
      * @return Resultado da saga (sucesso, falha ou em progresso)
      */
-    @Transactional
     public OrderSagaResult execute(OrderSagaCommand command) {
         // Padrão: Idempotência - Verificar se saga já foi executada
         if (command.getIdempotencyKey() != null && !command.getIdempotencyKey().isBlank()) {
@@ -273,26 +283,38 @@ public class OrderSagaOrchestrator {
     /**
      * Compensa a saga em caso de falha.
      * 
-     * <p>Se o pedido foi criado mas pagamento falhou, cancela o pedido.</p>
+     * <p>Se o pedido foi criado mas pagamento falhou, mantém o status PAYMENT_FAILED
+     * para que o frontend possa identificar corretamente a causa da falha.</p>
      * 
      * <p>Padrão: Event-Driven Architecture - Após compensação,
      * publica SagaFailedEvent para notificar outros serviços sobre a falha.</p>
      */
+    @Transactional
     private void compensate(SagaExecutionEntity saga, Order order, String reason) {
         log.warn("Compensating saga {} - Reason: {}", saga.getId(), reason);
         
         String failedStep = saga.getCurrentStep() != null ? saga.getCurrentStep() : "UNKNOWN";
         boolean compensated = false;
         
-        // Cancelar pedido se foi criado mas pagamento falhou
-        // Verifica se pedido existe e não foi pago (independente do status da saga)
+        // Se pedido existe e não foi pago, garantir que status está correto
+        // Se já é PAYMENT_FAILED, manter (não mudar para CANCELED)
+        // Se é PENDING, pode mudar para CANCELED (outros tipos de falha)
         if (order != null && !order.isPaid()) {
-            // Pedido foi criado mas pagamento falhou - cancelar pedido
             try {
-                order.updateStatus(OrderStatus.CANCELED);
-                orderRepository.save(order);
-                compensated = true;
-                log.info("Order {} cancelled due to payment failure", order.getId());
+                // Se já é PAYMENT_FAILED, manter o status (já foi salvo pelo ProcessPaymentUseCase)
+                if (order.isPaymentFailed()) {
+                    // Status já está correto (PAYMENT_FAILED), apenas garantir que está salvo
+                    orderRepository.save(order);
+                    compensated = true;
+                    log.info("Order {} has PAYMENT_FAILED status - maintaining status", order.getId());
+                } else if (order.isPending()) {
+                    // Outros tipos de falha (não relacionadas a pagamento) - cancelar
+                    order.updateStatus(OrderStatus.CANCELED);
+                    orderRepository.save(order);
+                    compensated = true;
+                    log.info("Order {} cancelled due to failure", order.getId());
+                }
+                // Se já é CANCELED, não fazer nada
             } catch (Exception e) {
                 log.error("Failed to compensate order {}: {}", order.getId(), e.getMessage());
             }
@@ -372,6 +394,7 @@ public class OrderSagaOrchestrator {
      * @param idempotencyKey Chave de idempotência (pode ser null)
      * @return Saga criada e persistida
      */
+    @Transactional
     private SagaExecutionEntity startSaga(String idempotencyKey) {
         SagaExecutionEntity saga = SagaExecutionEntity.builder()
             .id(UUID.randomUUID())
@@ -386,6 +409,7 @@ public class OrderSagaOrchestrator {
     /**
      * Marca saga como concluída.
      */
+    @Transactional
     private void completeSaga(SagaExecutionEntity saga, Order order) {
         saga.setStatus(SagaExecutionEntity.SagaStatus.COMPLETED);
         saga.setCompletedAt(LocalDateTime.now());
@@ -402,6 +426,7 @@ public class OrderSagaOrchestrator {
     /**
      * Inicia um passo da saga.
      */
+    @Transactional
     private SagaStepEntity startStep(SagaExecutionEntity saga, String stepName) {
         SagaStepEntity step = SagaStepEntity.builder()
             .id(UUID.randomUUID())
@@ -421,6 +446,7 @@ public class OrderSagaOrchestrator {
     /**
      * Completa um passo da saga.
      */
+    @Transactional
     private void completeStep(SagaStepEntity step, boolean success, String errorMessage) {
         step.setStatus(success ? SagaStepEntity.StepStatus.SUCCESS : SagaStepEntity.StepStatus.FAILED);
         step.setCompletedAt(LocalDateTime.now());

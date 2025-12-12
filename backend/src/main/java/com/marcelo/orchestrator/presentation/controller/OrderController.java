@@ -78,47 +78,60 @@ public class OrderController {
             @Valid @RequestBody CreateOrderRequest request) {
         log.info("Creating order for customer: {}", request.getCustomerId());
         
-        // Gerar idempotencyKey se não fornecido
-        // Padrão: Idempotência - garante que requisições duplicadas não criem pedidos duplicados
-        String idempotencyKey = request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank()
-            ? request.getIdempotencyKey()
-            : UUID.randomUUID().toString(); // Gerar automaticamente se não fornecido
-        
-        // Converter DTO para Command
-        OrderSagaCommand command = OrderSagaCommand.builder()
-            .idempotencyKey(idempotencyKey)
-            .customerId(request.getCustomerId())
-            .customerName(request.getCustomerName())
-            .customerEmail(request.getCustomerEmail())
-            .items(OrderMapper.toDomainList(request.getItems()))
-            .paymentMethod(request.getPaymentMethod())
-            .currency(request.getCurrency() != null ? request.getCurrency() : "BRL")
-            .build();
-        
-        // Executar saga
-        OrderSagaResult result = sagaOrchestrator.execute(command);
-        
-        // Converter resultado para response
-        // Padrão: Idempotência - tratar caso de saga em progresso
-        if (result.isSuccess()) {
-            CreateOrderResponse response = CreateOrderResponse.success(
-                OrderResponse.from(result.getOrder()),
-                result.getSagaExecutionId()
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } else if (result.isInProgress()) {
-            // Saga já está em progresso (idempotência)
-            CreateOrderResponse response = CreateOrderResponse.inProgress(
-                result.getSagaExecutionId(),
-                "Order creation is already in progress"
-            );
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
-        } else {
+        try {
+            // Gerar idempotencyKey se não fornecido
+            // Padrão: Idempotência - garante que requisições duplicadas não criem pedidos duplicados
+            String idempotencyKey = request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank()
+                ? request.getIdempotencyKey()
+                : UUID.randomUUID().toString(); // Gerar automaticamente se não fornecido
+            
+            // Converter DTO para Command
+            OrderSagaCommand command = OrderSagaCommand.builder()
+                .idempotencyKey(idempotencyKey)
+                .customerId(request.getCustomerId())
+                .customerName(request.getCustomerName())
+                .customerEmail(request.getCustomerEmail())
+                .items(OrderMapper.toDomainList(request.getItems()))
+                .paymentMethod(request.getPaymentMethod())
+                .currency(request.getCurrency() != null ? request.getCurrency() : "BRL")
+                .build();
+            
+            // Executar saga
+            OrderSagaResult result = sagaOrchestrator.execute(command);
+            
+            // Converter resultado para response
+            // Padrão: Idempotência - tratar caso de saga em progresso
+            if (result.isSuccess()) {
+                CreateOrderResponse response = CreateOrderResponse.success(
+                    OrderResponse.from(result.getOrder()),
+                    result.getSagaExecutionId()
+                );
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            } else if (result.isInProgress()) {
+                // Saga já está em progresso (idempotência)
+                CreateOrderResponse response = CreateOrderResponse.inProgress(
+                    result.getSagaExecutionId(),
+                    "Order creation is already in progress"
+                );
+                return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+            } else {
+                CreateOrderResponse response = CreateOrderResponse.failed(
+                    result.getSagaExecutionId(),
+                    result.getErrorMessage()
+                );
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid argument in createOrder: {}", e.getMessage(), e);
             CreateOrderResponse response = CreateOrderResponse.failed(
-                result.getSagaExecutionId(),
-                result.getErrorMessage()
+                null,
+                "Invalid request data: " + e.getMessage()
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        } catch (Exception e) {
+            log.error("Unexpected error in createOrder: {}", e.getMessage(), e);
+            // Deixa o GlobalExceptionHandler tratar
+            throw e;
         }
     }
     
@@ -167,22 +180,36 @@ public class OrderController {
     }
     
     /**
-     * Lista todos os pedidos.
+     * Lista todos os pedidos ou filtra por status.
+     * 
+     * <p>Se o parâmetro {@code status} for fornecido, retorna apenas pedidos
+     * com aquele status. Caso contrário, retorna todos os pedidos.</p>
      */
     @GetMapping
     @Operation(
-        summary = "Listar todos os pedidos",
-        description = "Retorna uma lista com todos os pedidos do sistema"
+        summary = "Listar pedidos",
+        description = "Retorna uma lista de pedidos. Pode ser filtrado por status usando o parâmetro query 'status' (PENDING, PAID, PAYMENT_FAILED, CANCELED)"
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Lista de pedidos retornada com sucesso")
     })
-    public ResponseEntity<List<OrderResponse>> getAllOrders() {
-        log.info("Finding all orders");
+    public ResponseEntity<List<OrderResponse>> getAllOrders(
+            @Parameter(description = "Status para filtrar pedidos (opcional). Valores: PENDING, PAID, PAYMENT_FAILED, CANCELED")
+            @RequestParam(required = false) com.marcelo.orchestrator.domain.model.OrderStatus status) {
         
-        List<OrderResponse> orders = orderRepository.findAll().stream()
-            .map(OrderResponse::from)
-            .collect(Collectors.toList());
+        List<OrderResponse> orders;
+        
+        if (status != null) {
+            log.info("Finding orders by status: {}", status);
+            orders = orderRepository.findByStatus(status).stream()
+                .map(OrderResponse::from)
+                .collect(Collectors.toList());
+        } else {
+            log.info("Finding all orders");
+            orders = orderRepository.findAll().stream()
+                .map(OrderResponse::from)
+                .collect(Collectors.toList());
+        }
         
         return ResponseEntity.ok(orders);
     }

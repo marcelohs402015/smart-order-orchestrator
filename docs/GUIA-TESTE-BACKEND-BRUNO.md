@@ -271,7 +271,7 @@ Smart Order Orchestrator/
   ],
   "paymentMethod": "CREDIT_CARD",
   "currency": "BRL",
-  "idempotencyKey": "test-idempotency-key-001"
+npm   "idempotencyKey": "test-idempotency-key-001"
 }
 ```
 

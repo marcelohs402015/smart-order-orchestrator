@@ -9,6 +9,7 @@ import com.marcelo.orchestrator.domain.port.PaymentResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -55,11 +56,15 @@ public class ProcessPaymentUseCase {
     /**
      * Processa pagamento de um pedido.
      * 
+     * <p><strong>Padrão Saga:</strong> Usa REQUIRES_NEW para garantir transação
+     * independente que faz commit imediato, permitindo compensação manual se
+     * passos subsequentes falharem.</p>
+     * 
      * @param command Command com dados do pagamento
      * @return Pedido atualizado com resultado do pagamento
      * @throws IllegalArgumentException se pedido não encontrado ou estado inválido
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Order execute(ProcessPaymentCommand command) {
         log.info("Processing payment for order: {}", command.getOrderId());
         
