@@ -1,5 +1,49 @@
 # Changelog - Integração Frontend-Backend
 
+## [11/12/2024] - Correção de Status de Pagamento
+
+### ✅ Adicionado
+
+#### Backend
+- **Endpoint para buscar pedidos por status:** `GET /api/v1/orders?status={status}`
+  - Suporta filtro por: `PENDING`, `PAID`, `PAYMENT_FAILED`, `CANCELED`
+  - Documentação Swagger completa
+  - Parâmetro `status` opcional (retorna todos se não fornecido)
+
+### 🔧 Corrigido
+
+- **Status PAYMENT_FAILED não persistido:** 
+  - Problema: Status era sobrescrito para `CANCELED` durante compensação da saga
+  - Solução: Método `compensate()` agora mantém `PAYMENT_FAILED` quando pagamento falha
+  - Impacto: Frontend pode identificar corretamente falhas de pagamento
+
+- **Teste unitário desatualizado:**
+  - `OrderSagaOrchestratorTest.shouldCompensateWhenPaymentFails` atualizado
+  - Agora valida que status `PAYMENT_FAILED` é mantido (não muda para `CANCELED`)
+
+### 📝 Modificado
+
+- `backend/.../OrderSagaOrchestrator.java`
+  - Método `compensate()`: Lógica para manter `PAYMENT_FAILED` quando pagamento falha
+  - Diferenciação entre falhas de pagamento e outros tipos de cancelamento
+
+- `backend/.../OrderController.java`
+  - Método `getAllOrders()`: Adicionado parâmetro opcional `status` para filtro
+  - Documentação Swagger expandida
+
+- `backend/.../OrderSagaOrchestratorTest.java`
+  - Teste `shouldCompensateWhenPaymentFails`: Atualizado para novo comportamento
+  - Comentários explicativos adicionados
+
+### 🎯 Resultado
+
+- ✅ Status `PAYMENT_FAILED` corretamente persistido na base de dados
+- ✅ Endpoint disponível para frontend consultar pedidos por status
+- ✅ Todos os testes passando (38/38)
+- ✅ Código alinhado com padrão Saga e arquitetura hexagonal
+
+---
+
 ## [2024] - Integração Completa
 
 ### ✅ Adicionado
