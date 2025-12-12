@@ -1,5 +1,47 @@
 # Changelog - Integração Frontend-Backend
 
+## [11/12/2024] - Guia Completo de Testes - Saga Pattern e Circuit Breaker
+
+### ✅ Adicionado
+
+#### Documentação
+- **Guia Completo de Testes:** `docs/GUIA-TESTES-COMPLETOS-SAGA-CIRCUIT-BREAKER.md`
+  - 10 cenários detalhados de testes
+  - Cenários do Saga Pattern (sucesso, falha no pagamento, falha na análise)
+  - Cenários de Circuit Breaker (fechado, abrindo, half-open, retry)
+  - Cenários de integração AbacatePay (sucesso, falha, timeout)
+  - Validação de status e persistência
+  - Observabilidade e métricas
+  - Checklist completo para apresentação na Accenture
+  - Scripts bash para automação de testes
+
+#### Contexto
+- **Contexto da Sessão:** `docs/CONTEXTO-SESSAO-GUIA-TESTES-COMPLETOS.md`
+  - Registro completo da criação do guia
+  - Objetivos alcançados
+  - Estrutura do documento
+  - Pontos de destaque para entrevista
+
+### 🎯 Objetivo
+
+Criar guia completo para validar todos os cenários críticos do sistema antes da apresentação na Accenture, incluindo:
+- Todos os cenários do Saga Pattern
+- Circuit Breaker em todos os estados
+- Integração com AbacatePay (sucesso, falha, timeout)
+- Validação de status e persistência
+- Observabilidade e métricas
+
+### 📊 Cobertura
+
+- ✅ 10 cenários detalhados documentados
+- ✅ Exemplos práticos de requisições HTTP
+- ✅ Queries SQL para validação
+- ✅ Scripts bash para automação
+- ✅ Checklist completo para apresentação
+- ✅ Métricas e observabilidade documentadas
+
+---
+
 ## [11/12/2024] - Correção de Status de Pagamento
 
 ### ✅ Adicionado

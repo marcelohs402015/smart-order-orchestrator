@@ -29,3 +29,7 @@ dist-ssr
 .env.production.local
 .env.development.local
 
+# Documentos de contexto de sessão (NÃO SUBIR NO GITHUB)
+docs/CONTEXTO-*.md
+CONTEXTO-*.md
+
