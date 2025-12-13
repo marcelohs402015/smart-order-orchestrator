@@ -57,19 +57,29 @@ import java.util.List;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class OpenAIRiskAnalysisAdapter implements RiskAnalysisPort {
     
     private final WebClient openAIWebClient;
+    private final String model;
+    private final Double temperature;
+    private final Integer maxTokens;
     
-    @Value("${openai.api.model:gpt-3.5-turbo}")
-    private String model;
-    
-    @Value("${openai.api.temperature:0.0}")
-    private Double temperature;
-    
-    @Value("${openai.api.max-tokens:10}")
-    private Integer maxTokens;
+    /**
+     * Construtor com injeção de dependências.
+     * 
+     * <p>Padrão: Constructor Injection - campos final garantem imutabilidade
+     * e seguem boas práticas do Spring.</p>
+     */
+    public OpenAIRiskAnalysisAdapter(
+            WebClient openAIWebClient,
+            @Value("${openai.api.model:gpt-3.5-turbo}") String model,
+            @Value("${openai.api.temperature:0.0}") Double temperature,
+            @Value("${openai.api.max-tokens:10}") Integer maxTokens) {
+        this.openAIWebClient = openAIWebClient;
+        this.model = model;
+        this.temperature = temperature;
+        this.maxTokens = maxTokens;
+    }
     
     /**
      * Analisa risco do pedido usando OpenAI.

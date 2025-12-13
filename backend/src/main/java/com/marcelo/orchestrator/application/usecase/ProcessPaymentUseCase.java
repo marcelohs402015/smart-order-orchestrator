@@ -3,6 +3,7 @@ package com.marcelo.orchestrator.application.usecase;
 import com.marcelo.orchestrator.domain.model.Order;
 import com.marcelo.orchestrator.domain.port.NotificationPort;
 import com.marcelo.orchestrator.domain.port.OrderRepositoryPort;
+import com.marcelo.orchestrator.application.exception.OrderNotFoundException;
 import com.marcelo.orchestrator.domain.port.PaymentGatewayPort;
 import com.marcelo.orchestrator.domain.port.PaymentRequest;
 import com.marcelo.orchestrator.domain.port.PaymentResult;
@@ -62,7 +63,8 @@ public class ProcessPaymentUseCase {
      * 
      * @param command Command com dados do pagamento
      * @return Pedido atualizado com resultado do pagamento
-     * @throws IllegalArgumentException se pedido não encontrado ou estado inválido
+     * @throws OrderNotFoundException se pedido não encontrado
+     * @throws IllegalStateException se estado inválido para pagamento
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Order execute(ProcessPaymentCommand command) {
@@ -70,9 +72,7 @@ public class ProcessPaymentUseCase {
         
         // Buscar pedido
         Order order = orderRepository.findById(command.getOrderId())
-            .orElseThrow(() -> new IllegalArgumentException(
-                String.format("Order not found: %s", command.getOrderId())
-            ));
+            .orElseThrow(() -> new OrderNotFoundException(command.getOrderId()));
         
         // Validar estado
         if (!order.isPending()) {

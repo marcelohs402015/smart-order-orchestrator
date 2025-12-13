@@ -6,13 +6,14 @@
     <modelVersion>4.0.0</modelVersion>
     
     <!-- 
-        Spring Boot 3.2+ como parent para gerenciar versões de dependências.
+        Spring Boot 3.3+ como parent para gerenciar versões de dependências.
         Escolhido por suporte nativo a Virtual Threads (Project Loom) e melhor performance.
+        Versão 3.3.6+ inclui correções de segurança e melhorias de performance.
     -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.0</version>
+        <version>3.3.6</version>
         <relativePath/>
     </parent>
     
@@ -20,7 +21,7 @@
     <artifactId>smart-order-orchestrator</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <name>Smart Order Orchestrator</name>
-    <description>Smart Order Orchestrator - Hexagonal Architecture with Spring Boot 3.2+ and Java 21</description>
+    <description>Smart Order Orchestrator - Hexagonal Architecture with Spring Boot 3.3+ and Java 21</description>
     
     <properties>
         <!-- Java 21: Suporte a Virtual Threads (Project Loom) para alta concorrência sem overhead de threads tradicionais -->
@@ -30,13 +31,20 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         
         <!-- MapStruct: Geração de código para mappers entre camadas, reduzindo boilerplate -->
-        <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <!-- Versão 1.6.2: Suporte completo Java 21, melhorias de performance e correções de bugs -->
+        <mapstruct.version>1.6.2</mapstruct.version>
         
         <!-- Lombok: Redução de boilerplate (getters, setters, builders) mantendo legibilidade e performance -->
-        <lombok.version>1.18.30</lombok.version>
+        <!-- Versão 1.18.34: Suporte completo Java 21, correções de compatibilidade com annotation processors -->
+        <lombok.version>1.18.34</lombok.version>
         
         <!-- Resilience4j: Circuit Breaker, Retry e Fallback para resiliência em integrações externas -->
-        <resilience4j.version>2.1.0</resilience4j.version>
+        <!-- Versão 2.2.0: Melhorias de performance e compatibilidade com Spring Boot 3.3+ -->
+        <resilience4j.version>2.2.0</resilience4j.version>
+        
+        <!-- Flyway: Migrations de banco de dados versionadas -->
+        <!-- Versão 10.10.0: Suporte completo para PostgreSQL 16+ e melhorias de performance -->
+        <flyway.version>10.10.0</flyway.version>
     </properties>
     
     <dependencies>
@@ -65,9 +73,18 @@
         </dependency>
         
         <!-- Flyway: Migrations de banco de dados versionadas -->
+        <!-- Versão 10.10.0: Suporte completo para PostgreSQL 16+ -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+        
+        <!-- Flyway Database PostgreSQL: Driver específico para PostgreSQL 16+ -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <version>${flyway.version}</version>
         </dependency>
         
         <!-- Spring Boot Actuator: Health checks, metrics, monitoring -->
@@ -127,10 +144,11 @@
         </dependency>
         
         <!-- SpringDoc OpenAPI: Documentação automática da API REST (Swagger UI) -->
+        <!-- Versão 2.6.0: Compatível com Spring Boot 3.3+, melhorias de performance -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.3.0</version>
+            <version>2.6.0</version>
         </dependency>
         
         <!-- Google Cloud Secret Manager: Gerenciamento seguro de secrets (chaves de API, senhas) -->
@@ -185,13 +203,15 @@
             </plugin>
             
             <!-- Maven Compiler Plugin: Configuração para Java 21 e annotation processors -->
+            <!-- Versão 3.13.0: Melhor suporte para Java 21, correções de bugs -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>3.13.0</version>
                 <configuration>
                     <source>21</source>
                     <target>21</target>
+                    <release>21</release>
                     <!-- 
                         Annotation Processors: Lombok e MapStruct precisam processar anotações em tempo de compilação.
                         Ordem importa: Lombok primeiro, depois MapStruct, depois binding.

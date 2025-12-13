@@ -4,6 +4,7 @@ import com.marcelo.orchestrator.domain.model.Order;
 import com.marcelo.orchestrator.domain.model.OrderStatus;
 import com.marcelo.orchestrator.domain.port.OrderRepositoryPort;
 import com.marcelo.orchestrator.infrastructure.persistence.entity.OrderEntity;
+import com.marcelo.orchestrator.infrastructure.persistence.entity.OrderItemEntity;
 import com.marcelo.orchestrator.infrastructure.persistence.mapper.OrderMapper;
 import com.marcelo.orchestrator.infrastructure.persistence.repository.JpaOrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Adaptador que implementa OrderRepositoryPort usando JPA.
@@ -54,10 +54,32 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
     public Order save(Order order) {
         log.debug("Saving order: {}", order.getId());
         
-        // Converter domínio para JPA
-        OrderEntity entity = orderMapper.toEntity(order);
+        // Verificar se entidade já existe no banco (para evitar "detached entity" error)
+        // IMPORTANTE: Usar findByIdWithItems() para carregar itens junto (evita lazy loading issues)
+        OrderEntity entity = jpaOrderRepository.findByIdWithItems(order.getId())
+            .orElse(null);
         
-        // Salvar usando Spring Data JPA
+        if (entity != null) {
+            // Entidade existe: atualizar campos existentes
+            // Isso evita erro "A different object with the same identifier value was already associated with the session"
+            log.debug("Order {} already exists, updating existing entity", order.getId());
+            
+            // IMPORTANTE: Atualizar apenas campos simples (status, paymentId, etc.)
+            // NÃO atualizar itens - eles só mudam na criação do pedido
+            // Atualizar itens quebra a referência gerenciada pelo JPA com orphanRemoval=true
+            orderMapper.updateEntity(order, entity);
+            
+            // NÃO atualizar itens aqui - eles são imutáveis após criação
+            // Os itens só são definidos na criação do pedido e não devem ser alterados
+            // Se precisar alterar itens, deve ser feito através de uma nova entidade ou
+            // através de uma operação específica que lide com isso corretamente
+        } else {
+            // Entidade não existe: criar nova
+            log.debug("Order {} does not exist, creating new entity", order.getId());
+            entity = orderMapper.toEntity(order);
+        }
+        
+        // Salvar usando Spring Data JPA (save() faz merge se entidade já existe)
         OrderEntity savedEntity = jpaOrderRepository.save(entity);
         
         // Converter JPA para domínio
@@ -88,7 +110,7 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
         // Usa query com JOIN FETCH para carregar items junto (evita LazyInitializationException)
         return jpaOrderRepository.findAllWithItems().stream()
             .map(orderMapper::toDomain)
-            .collect(Collectors.toList());
+            .toList(); // Java 16+ - mais conciso que Collectors.toList()
     }
     
     @Override
@@ -97,7 +119,7 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
         
         return jpaOrderRepository.findByStatus(status).stream()
             .map(orderMapper::toDomain)
-            .collect(Collectors.toList());
+            .toList(); // Java 16+ - mais conciso que Collectors.toList()
     }
     
     @Override

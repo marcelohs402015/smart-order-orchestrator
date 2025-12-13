@@ -55,13 +55,23 @@ import java.time.LocalDateTime;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class AbacatePayAdapter implements PaymentGatewayPort {
     
     private final WebClient abacatePayWebClient;
+    private final String baseUrl;
     
-    @Value("${abacatepay.api.base-url:https://api.abacatepay.com/v1}")
-    private String baseUrl;
+    /**
+     * Construtor com injeção de dependências.
+     * 
+     * <p>Padrão: Constructor Injection - campos final garantem imutabilidade
+     * e seguem boas práticas do Spring.</p>
+     */
+    public AbacatePayAdapter(
+            WebClient abacatePayWebClient,
+            @Value("${abacatepay.api.base-url:https://api.abacatepay.com/v1}") String baseUrl) {
+        this.abacatePayWebClient = abacatePayWebClient;
+        this.baseUrl = baseUrl;
+    }
     
     /**
      * Processa pagamento no AbacatePay.

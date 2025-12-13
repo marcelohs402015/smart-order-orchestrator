@@ -1,6 +1,7 @@
 package com.marcelo.orchestrator.application.usecase;
 
 import com.marcelo.orchestrator.domain.model.Order;
+import com.marcelo.orchestrator.application.exception.OrderNotFoundException;
 import com.marcelo.orchestrator.domain.port.NotificationPort;
 import com.marcelo.orchestrator.domain.port.OrderRepositoryPort;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +51,7 @@ public class UpdateOrderStatusUseCase {
      * 
      * @param command Command com ID do pedido e novo status
      * @return Pedido atualizado
-     * @throws IllegalArgumentException se pedido não encontrado
+     * @throws OrderNotFoundException se pedido não encontrado
      * @throws IllegalStateException se transição não é permitida (validação no domínio)
      */
     @Transactional
@@ -59,9 +60,7 @@ public class UpdateOrderStatusUseCase {
         
         // Buscar pedido
         Order order = orderRepository.findById(command.getOrderId())
-            .orElseThrow(() -> new IllegalArgumentException(
-                String.format("Order not found: %s", command.getOrderId())
-            ));
+            .orElseThrow(() -> new OrderNotFoundException(command.getOrderId()));
         
         // Atualizar status (validação de transição acontece aqui - no domínio)
         order.updateStatus(command.getNewStatus());

@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -97,9 +98,13 @@ public class OrderEntity {
     /**
      * Itens do pedido.
      * Relacionamento One-to-Many com cascade para persistir junto.
+     * 
+     * <p><strong>IMPORTANTE:</strong> @Builder.Default garante que a lista seja sempre inicializada.
+     * Isso evita problemas com orphanRemoval quando a lista é null ou não inicializada.</p>
      */
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<OrderItemEntity> items;
+    @Builder.Default
+    private List<OrderItemEntity> items = new ArrayList<>();
     
     /**
      * Valor total do pedido.

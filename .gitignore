@@ -34,10 +34,11 @@ logs/
 
 # Build
 target/
+.mvn/
 build/
 dist/
-*.class
-*.jar
+**/*.class
+**/*.jar
 *.war
 
 # Dependencies

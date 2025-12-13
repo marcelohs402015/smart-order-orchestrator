@@ -8,7 +8,6 @@ import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,13 +35,8 @@ import java.util.stream.Collectors;
  * 
  * @author Marcelo
  */
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", implementationName = "OrderPersistenceMapperImpl")
 public interface OrderMapper {
-    
-    /**
-     * Instância do mapper (gerada por MapStruct).
-     */
-    OrderMapper INSTANCE = Mappers.getMapper(OrderMapper.class);
     
     /**
      * Converte Order (domínio) para OrderEntity (JPA).
@@ -60,9 +54,23 @@ public interface OrderMapper {
      */
     @AfterMapping
     default void mapItemsAfterMapping(Order order, @MappingTarget OrderEntity entity) {
-        if (order != null && order.getItems() != null && !order.getItems().isEmpty()) {
-            entity.setItems(mapItemsToEntity(order.getItems(), entity));
+        // IMPORTANTE: Garantir que a lista está inicializada (já está com @Builder.Default, mas garantir)
+        if (entity.getItems() == null) {
+            entity.setItems(new java.util.ArrayList<>());
         }
+        
+        if (order != null && order.getItems() != null && !order.getItems().isEmpty()) {
+            // IMPORTANTE: Não usar clear() + setItems() - isso quebra referência gerenciada pelo JPA
+            // Se a lista já tem itens (não deveria na criação, mas garantir), limpar primeiro
+            if (!entity.getItems().isEmpty()) {
+                entity.getItems().clear();
+            }
+            
+            // Adicionar novos itens na lista existente (mantém referência gerenciada pelo JPA)
+            List<OrderItemEntity> newItems = mapItemsToEntity(order.getItems(), entity);
+            entity.getItems().addAll(newItems);
+        }
+        // Se não há itens, a lista já está vazia (inicializada com @Builder.Default)
     }
     
     /**
@@ -107,6 +115,9 @@ public interface OrderMapper {
     /**
      * Converte lista de OrderItem (domínio) para OrderItemEntity (JPA).
      * 
+     * <p><strong>Importante:</strong> Não gera ID manualmente. O JPA gerencia via @GeneratedValue.
+     * Isso evita erro "detached entity passed to persist" quando OrderEntity ainda não foi persistida.</p>
+     * 
      * @param items Lista de itens do domínio
      * @param order Pedido pai (para relacionamento)
      * @return Lista de entidades JPA
@@ -117,7 +128,8 @@ public interface OrderMapper {
         }
         return items.stream()
             .map(item -> OrderItemEntity.builder()
-                .id(java.util.UUID.randomUUID()) // ID gerado automaticamente (JPA)
+                // ID não é definido aqui - será gerado pelo JPA via @GeneratedValue
+                // Isso garante que a entidade seja tratada como "new" e não "detached"
                 .order(order)
                 .productId(item.getProductId())
                 .productName(item.getProductName())

@@ -1,5 +1,6 @@
 package com.marcelo.orchestrator.application.usecase;
 
+import com.marcelo.orchestrator.application.exception.OrderNotFoundException;
 import com.marcelo.orchestrator.domain.model.Order;
 import com.marcelo.orchestrator.domain.model.OrderItem;
 import com.marcelo.orchestrator.domain.model.OrderStatus;
@@ -159,8 +160,8 @@ class AnalyzeRiskUseCaseTest {
             .thenReturn(Optional.empty());
         
         // Act & Assert
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
+        OrderNotFoundException exception = assertThrows(
+            OrderNotFoundException.class,
             () -> useCase.execute(command)
         );
         

@@ -20,9 +20,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Controller REST para operações de pedidos.
@@ -52,6 +54,7 @@ public class OrderController {
     
     private final OrderSagaOrchestrator sagaOrchestrator;
     private final OrderRepositoryPort orderRepository;
+    private final OrderMapper orderMapper;
     
     /**
      * Cria um novo pedido executando a saga completa.
@@ -78,60 +81,50 @@ public class OrderController {
             @Valid @RequestBody CreateOrderRequest request) {
         log.info("Creating order for customer: {}", request.getCustomerId());
         
-        try {
-            // Gerar idempotencyKey se não fornecido
-            // Padrão: Idempotência - garante que requisições duplicadas não criem pedidos duplicados
-            String idempotencyKey = request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank()
-                ? request.getIdempotencyKey()
-                : UUID.randomUUID().toString(); // Gerar automaticamente se não fornecido
-            
-            // Converter DTO para Command
-            OrderSagaCommand command = OrderSagaCommand.builder()
-                .idempotencyKey(idempotencyKey)
-                .customerId(request.getCustomerId())
-                .customerName(request.getCustomerName())
-                .customerEmail(request.getCustomerEmail())
-                .items(OrderMapper.toDomainList(request.getItems()))
-                .paymentMethod(request.getPaymentMethod())
-                .currency(request.getCurrency() != null ? request.getCurrency() : "BRL")
-                .build();
-            
-            // Executar saga
-            OrderSagaResult result = sagaOrchestrator.execute(command);
-            
-            // Converter resultado para response
-            // Padrão: Idempotência - tratar caso de saga em progresso
-            if (result.isSuccess()) {
-                CreateOrderResponse response = CreateOrderResponse.success(
-                    OrderResponse.from(result.getOrder()),
-                    result.getSagaExecutionId()
-                );
-                return ResponseEntity.status(HttpStatus.CREATED).body(response);
-            } else if (result.isInProgress()) {
-                // Saga já está em progresso (idempotência)
-                CreateOrderResponse response = CreateOrderResponse.inProgress(
-                    result.getSagaExecutionId(),
-                    "Order creation is already in progress"
-                );
-                return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
-            } else {
-                CreateOrderResponse response = CreateOrderResponse.failed(
-                    result.getSagaExecutionId(),
-                    result.getErrorMessage()
-                );
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-            }
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid argument in createOrder: {}", e.getMessage(), e);
+        // Gerar idempotencyKey se não fornecido
+        // Padrão: Idempotência - garante que requisições duplicadas não criem pedidos duplicados
+        // IMPORTANTE: Se não fornecido, gera hash determinístico dos dados da requisição
+        // para garantir idempotência mesmo sem chave explícita do cliente
+        String idempotencyKey = request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank()
+            ? request.getIdempotencyKey()
+            : generateIdempotencyKey(request); // Hash determinístico dos dados da requisição
+        
+        // Converter DTO para Command
+        // Padrão: Dependency Injection - OrderMapper é injetado via construtor (SOLID)
+        OrderSagaCommand command = OrderSagaCommand.builder()
+            .idempotencyKey(idempotencyKey)
+            .customerId(request.getCustomerId())
+            .customerName(request.getCustomerName())
+            .customerEmail(request.getCustomerEmail())
+            .items(orderMapper.toDomainList(request.getItems()))
+            .paymentMethod(request.getPaymentMethod())
+            .currency(request.getCurrency() != null ? request.getCurrency() : "BRL")
+            .build();
+        
+        // Executar saga
+        OrderSagaResult result = sagaOrchestrator.execute(command);
+        
+        // Converter resultado para response
+        // Padrão: Idempotência - tratar caso de saga em progresso
+        if (result.isSuccess()) {
+            CreateOrderResponse response = CreateOrderResponse.success(
+                OrderResponse.from(result.getOrder()),
+                result.getSagaExecutionId()
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } else if (result.isInProgress()) {
+            // Saga já está em progresso (idempotência)
+            CreateOrderResponse response = CreateOrderResponse.inProgress(
+                result.getSagaExecutionId(),
+                "Order creation is already in progress"
+            );
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+        } else {
             CreateOrderResponse response = CreateOrderResponse.failed(
-                null,
-                "Invalid request data: " + e.getMessage()
+                result.getSagaExecutionId(),
+                result.getErrorMessage()
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        } catch (Exception e) {
-            log.error("Unexpected error in createOrder: {}", e.getMessage(), e);
-            // Deixa o GlobalExceptionHandler tratar
-            throw e;
         }
     }
     
@@ -203,15 +196,70 @@ public class OrderController {
             log.info("Finding orders by status: {}", status);
             orders = orderRepository.findByStatus(status).stream()
                 .map(OrderResponse::from)
-                .collect(Collectors.toList());
+                .toList(); // Java 16+ - mais conciso que Collectors.toList()
         } else {
             log.info("Finding all orders");
             orders = orderRepository.findAll().stream()
                 .map(OrderResponse::from)
-                .collect(Collectors.toList());
+                .toList(); // Java 16+ - mais conciso que Collectors.toList()
         }
         
         return ResponseEntity.ok(orders);
+    }
+    
+    /**
+     * Gera idempotencyKey determinística baseada nos dados da requisição.
+     * 
+     * <p>Padrão: Idempotência - Gera hash SHA-256 dos dados da requisição para garantir
+     * que requisições idênticas (mesmos dados) tenham a mesma chave, prevenindo duplicação.</p>
+     * 
+     * <p>Se o cliente não fornecer idempotencyKey, esta função garante que requisições
+     * com os mesmos dados produzam a mesma chave, mantendo idempotência.</p>
+     * 
+     * @param request Dados da requisição
+     * @return Hash SHA-256 dos dados da requisição como idempotencyKey
+     */
+    private String generateIdempotencyKey(CreateOrderRequest request) {
+        try {
+            // Criar string única com todos os dados relevantes da requisição
+            StringBuilder data = new StringBuilder();
+            data.append(request.getCustomerId());
+            data.append(request.getCustomerEmail());
+            data.append(request.getPaymentMethod());
+            if (request.getCurrency() != null) {
+                data.append(request.getCurrency());
+            }
+            
+            // Adicionar dados dos itens (produto, quantidade, preço)
+            if (request.getItems() != null) {
+                request.getItems().forEach(item -> {
+                    data.append(item.getProductId());
+                    data.append(item.getProductName());
+                    data.append(item.getQuantity());
+                    data.append(item.getUnitPrice());
+                });
+            }
+            
+            // Gerar hash SHA-256
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(data.toString().getBytes(StandardCharsets.UTF_8));
+            
+            // Converter para hexadecimal
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            // Fallback: se SHA-256 não disponível, usar UUID (não ideal, mas funcional)
+            log.warn("SHA-256 not available, using UUID as fallback for idempotency key");
+            return UUID.randomUUID().toString();
+        }
     }
 }
 

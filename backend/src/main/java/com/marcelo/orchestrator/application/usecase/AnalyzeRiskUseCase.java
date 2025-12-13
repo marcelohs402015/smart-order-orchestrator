@@ -1,6 +1,7 @@
 package com.marcelo.orchestrator.application.usecase;
 
 import com.marcelo.orchestrator.domain.model.Order;
+import com.marcelo.orchestrator.application.exception.OrderNotFoundException;
 import com.marcelo.orchestrator.domain.port.OrderRepositoryPort;
 import com.marcelo.orchestrator.domain.port.RiskAnalysisPort;
 import com.marcelo.orchestrator.domain.port.RiskAnalysisRequest;
@@ -58,7 +59,8 @@ public class AnalyzeRiskUseCase {
      * 
      * @param command Command com ID do pedido
      * @return Pedido atualizado com nível de risco
-     * @throws IllegalArgumentException se pedido não encontrado ou estado inválido
+     * @throws OrderNotFoundException se pedido não encontrado
+     * @throws IllegalStateException se estado inválido para análise de risco
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Order execute(AnalyzeRiskCommand command) {
@@ -66,9 +68,7 @@ public class AnalyzeRiskUseCase {
         
         // Buscar pedido
         Order order = orderRepository.findById(command.getOrderId())
-            .orElseThrow(() -> new IllegalArgumentException(
-                String.format("Order not found: %s", command.getOrderId())
-            ));
+            .orElseThrow(() -> new OrderNotFoundException(command.getOrderId()));
         
         // Validar estado - só analisa pedidos pagos
         if (!order.isPaid()) {

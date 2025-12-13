@@ -19,5 +19,9 @@ public class OrderNotFoundException extends DomainException {
     public OrderNotFoundException(String orderNumber) {
         super(String.format("Order not found with number: %s", orderNumber));
     }
+    
+    public OrderNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
 
