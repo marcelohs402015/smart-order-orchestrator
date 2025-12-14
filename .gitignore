@@ -21,8 +21,8 @@ docs/linkedin/
 *~
 
 # Cursor IDE - Personas e Regras (configurações pessoais)
-.cursor/rules/persona-front.txt
-.cursor/rules/persona-java.txt
+.cursor/rules/persona-front.md
+.cursor/rules/persona-java.md
 
 # OS
 .DS_Store
