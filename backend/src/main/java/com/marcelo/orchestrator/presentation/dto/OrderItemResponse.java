@@ -1,7 +1,6 @@
 package com.marcelo.orchestrator.presentation.dto;
 
-import lombok.Builder;
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -12,16 +11,35 @@ import java.util.UUID;
  * <p>Representa um item de pedido retornado pela API REST.
  * Inclui informações calculadas como subtotal.</p>
  * 
+ * <h3>Por que Record?</h3>
+ * <ul>
+ *   <li><strong>Imutabilidade:</strong> Dados não podem ser alterados após criação</li>
+ *   <li><strong>Simplicidade:</strong> Menos código, mais legível (Java 17+)</li>
+ *   <li><strong>Performance:</strong> Menos overhead que classes tradicionais</li>
+ * </ul>
+ * 
+ * @param productId ID do produto
+ * @param productName Nome do produto
+ * @param quantity Quantidade
+ * @param unitPrice Preço unitário
+ * @param subtotal Subtotal calculado (quantity * unitPrice)
+ * 
  * @author Marcelo
  */
-@Getter
-@Builder
-public class OrderItemResponse {
+public record OrderItemResponse(
+    @JsonProperty("productId")
+    UUID productId,
     
-    private UUID productId;
-    private String productName;
-    private Integer quantity;
-    private BigDecimal unitPrice;
-    private BigDecimal subtotal;
+    @JsonProperty("productName")
+    String productName,
+    
+    @JsonProperty("quantity")
+    Integer quantity,
+    
+    @JsonProperty("unitPrice")
+    BigDecimal unitPrice,
+    
+    @JsonProperty("subtotal")
+    BigDecimal subtotal
+) {
 }
-

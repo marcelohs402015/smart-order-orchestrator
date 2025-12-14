@@ -79,26 +79,26 @@ public class OrderController {
     })
     public ResponseEntity<CreateOrderResponse> createOrder(
             @Valid @RequestBody CreateOrderRequest request) {
-        log.info("Creating order for customer: {}", request.getCustomerId());
+        log.info("Creating order for customer: {}", request.customerId());
         
         // Gerar idempotencyKey se não fornecido
         // Padrão: Idempotência - garante que requisições duplicadas não criem pedidos duplicados
         // IMPORTANTE: Se não fornecido, gera hash determinístico dos dados da requisição
         // para garantir idempotência mesmo sem chave explícita do cliente
-        String idempotencyKey = request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank()
-            ? request.getIdempotencyKey()
+        String idempotencyKey = request.idempotencyKey() != null && !request.idempotencyKey().isBlank()
+            ? request.idempotencyKey()
             : generateIdempotencyKey(request); // Hash determinístico dos dados da requisição
         
         // Converter DTO para Command
         // Padrão: Dependency Injection - OrderPresentationMapper é injetado via construtor (SOLID)
         OrderSagaCommand command = OrderSagaCommand.builder()
             .idempotencyKey(idempotencyKey)
-            .customerId(request.getCustomerId())
-            .customerName(request.getCustomerName())
-            .customerEmail(request.getCustomerEmail())
-            .items(orderMapper.toDomainList(request.getItems()))
-            .paymentMethod(request.getPaymentMethod())
-            .currency(request.getCurrency() != null ? request.getCurrency() : "BRL")
+            .customerId(request.customerId())
+            .customerName(request.customerName())
+            .customerEmail(request.customerEmail())
+            .items(orderMapper.toDomainList(request.items()))
+            .paymentMethod(request.paymentMethod())
+            .currency(request.currency() != null ? request.currency() : "BRL")
             .build();
         
         // Executar saga
@@ -223,20 +223,20 @@ public class OrderController {
         try {
             // Criar string única com todos os dados relevantes da requisição
             StringBuilder data = new StringBuilder();
-            data.append(request.getCustomerId());
-            data.append(request.getCustomerEmail());
-            data.append(request.getPaymentMethod());
-            if (request.getCurrency() != null) {
-                data.append(request.getCurrency());
+            data.append(request.customerId());
+            data.append(request.customerEmail());
+            data.append(request.paymentMethod());
+            if (request.currency() != null) {
+                data.append(request.currency());
             }
             
             // Adicionar dados dos itens (produto, quantidade, preço)
-            if (request.getItems() != null) {
-                request.getItems().forEach(item -> {
-                    data.append(item.getProductId());
-                    data.append(item.getProductName());
-                    data.append(item.getQuantity());
-                    data.append(item.getUnitPrice());
+            if (request.items() != null) {
+                request.items().forEach(item -> {
+                    data.append(item.productId());
+                    data.append(item.productName());
+                    data.append(item.quantity());
+                    data.append(item.unitPrice());
                 });
             }
             

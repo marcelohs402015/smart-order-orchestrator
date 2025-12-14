@@ -1,7 +1,6 @@
 package com.marcelo.orchestrator.presentation.dto;
 
-import lombok.Builder;
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.UUID;
 
@@ -14,39 +13,53 @@ import java.util.UUID;
  * - ID da execução da saga (para rastreamento)
  * - Mensagem de erro (se falhou)</p>
  * 
+ * <h3>Por que Record?</h3>
+ * <ul>
+ *   <li><strong>Imutabilidade:</strong> Dados não podem ser alterados após criação</li>
+ *   <li><strong>Simplicidade:</strong> Menos código, mais legível (Java 17+)</li>
+ *   <li><strong>Performance:</strong> Menos overhead que classes tradicionais</li>
+ * </ul>
+ * 
+ * @param success Indica se a saga foi executada com sucesso
+ * @param order Pedido criado (null se falhou ou está em progresso)
+ * @param sagaExecutionId ID da execução da saga (para rastreamento)
+ * @param errorMessage Mensagem de erro (null se sucesso)
+ * 
  * @author Marcelo
  */
-@Getter
-@Builder
-public class CreateOrderResponse {
+public record CreateOrderResponse(
+    @JsonProperty("success")
+    boolean success,
     
-    private boolean success;
-    private OrderResponse order;
-    private UUID sagaExecutionId;
-    private String errorMessage;
+    @JsonProperty("order")
+    OrderResponse order,
     
+    @JsonProperty("sagaExecutionId")
+    UUID sagaExecutionId,
+    
+    @JsonProperty("errorMessage")
+    String errorMessage
+) {
     /**
      * Cria response de sucesso.
+     * 
+     * @param order Pedido criado
+     * @param sagaExecutionId ID da execução da saga
+     * @return CreateOrderResponse com success=true
      */
     public static CreateOrderResponse success(OrderResponse order, UUID sagaExecutionId) {
-        return CreateOrderResponse.builder()
-            .success(true)
-            .order(order)
-            .sagaExecutionId(sagaExecutionId)
-            .errorMessage(null)
-            .build();
+        return new CreateOrderResponse(true, order, sagaExecutionId, null);
     }
     
     /**
      * Cria response de falha.
+     * 
+     * @param sagaExecutionId ID da execução da saga
+     * @param errorMessage Mensagem de erro
+     * @return CreateOrderResponse com success=false
      */
     public static CreateOrderResponse failed(UUID sagaExecutionId, String errorMessage) {
-        return CreateOrderResponse.builder()
-            .success(false)
-            .order(null)
-            .sagaExecutionId(sagaExecutionId)
-            .errorMessage(errorMessage)
-            .build();
+        return new CreateOrderResponse(false, null, sagaExecutionId, errorMessage);
     }
     
     /**
@@ -54,14 +67,12 @@ public class CreateOrderResponse {
      * 
      * <p>Padrão: Idempotência - usado quando uma saga com a mesma
      * idempotency_key já está sendo executada.</p>
+     * 
+     * @param sagaExecutionId ID da execução da saga em progresso
+     * @param message Mensagem informativa
+     * @return CreateOrderResponse com success=false e mensagem
      */
     public static CreateOrderResponse inProgress(UUID sagaExecutionId, String message) {
-        return CreateOrderResponse.builder()
-            .success(false)
-            .order(null)
-            .sagaExecutionId(sagaExecutionId)
-            .errorMessage(message)
-            .build();
+        return new CreateOrderResponse(false, null, sagaExecutionId, message);
     }
 }
-

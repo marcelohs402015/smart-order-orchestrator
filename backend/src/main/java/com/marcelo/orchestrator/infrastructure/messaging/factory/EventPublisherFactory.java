@@ -49,9 +49,8 @@ import org.springframework.stereotype.Component;
  *   broker:
  *     type: KAFKA  # ou PUBSUB, RABBITMQ, etc.
  * 
- * // Spring injeta automaticamente:
- * @Autowired
- * private EventPublisherPort eventPublisher; // Usa implementação correta
+ * // Spring injeta automaticamente via construtor (Dependency Injection):
+ * private final EventPublisherPort eventPublisher; // Usa implementação correta
  * }</pre>
  * 
  * <h3>Extensibilidade:</h3>
@@ -92,15 +91,16 @@ public class EventPublisherFactory {
      * o ciclo de vida dos adapters.</p>
      * 
      * <p>Atualmente usa apenas InMemoryAdapter. Para adicionar outros brokers
-     * (Kafka, Pub/Sub, RabbitMQ), descomentar no construtor e no método create().</p>
+     * (Kafka, Pub/Sub, RabbitMQ), adicionar como parâmetros opcionais no construtor
+     * e no método create().</p>
      */
     public EventPublisherFactory(InMemoryEventPublisherAdapter inMemoryAdapter) {
         this.inMemoryAdapter = inMemoryAdapter;
         
         // TODO: Quando implementar outros brokers, adicionar como parâmetros opcionais:
-        // @Autowired(required = false) KafkaEventPublisherAdapter kafkaAdapter,
-        // @Autowired(required = false) PubSubEventPublisherAdapter pubSubAdapter,
-        // @Autowired(required = false) RabbitMqEventPublisherAdapter rabbitMqAdapter
+        // KafkaEventPublisherAdapter kafkaAdapter,
+        // PubSubEventPublisherAdapter pubSubAdapter,
+        // RabbitMqEventPublisherAdapter rabbitMqAdapter
     }
     
     /**

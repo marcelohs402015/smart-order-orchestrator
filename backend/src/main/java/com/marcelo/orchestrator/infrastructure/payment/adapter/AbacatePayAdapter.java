@@ -213,8 +213,8 @@ public class AbacatePayAdapter implements PaymentGatewayPort {
         
         // Identificar ambiente de teste através do devMode
         if (Boolean.TRUE.equals(data.getDevMode())) {
-            log.info("🧪 [DEV MODE] Payment processed in TEST environment. Payment ID: {}, Order: {}", 
-                data.getId(), data.getDescription());
+            log.info("🧪 [DEV MODE] Payment processed in TEST environment. Payment ID: {}", 
+                data.getId());
         } else {
             log.info("✅ [PRODUCTION] Payment processed in PRODUCTION environment. Payment ID: {}", 
                 data.getId());

@@ -1,7 +1,6 @@
 package com.marcelo.orchestrator.presentation.exception;
 
-import lombok.Builder;
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -12,16 +11,35 @@ import java.util.Map;
  * <p>Formato padronizado de erro retornado pela API REST.
  * Segue padrão RFC 7807 (Problem Details for HTTP APIs).</p>
  * 
+ * <h3>Por que Record?</h3>
+ * <ul>
+ *   <li><strong>Imutabilidade:</strong> Dados não podem ser alterados após criação</li>
+ *   <li><strong>Simplicidade:</strong> Menos código, mais legível (Java 17+)</li>
+ *   <li><strong>Performance:</strong> Menos overhead que classes tradicionais</li>
+ * </ul>
+ * 
+ * @param timestamp Data e hora do erro
+ * @param status Código HTTP do erro
+ * @param error Tipo do erro
+ * @param message Mensagem descritiva do erro
+ * @param details Detalhes adicionais (para erros de validação)
+ * 
  * @author Marcelo
  */
-@Getter
-@Builder
-public class ErrorResponse {
+public record ErrorResponse(
+    @JsonProperty("timestamp")
+    LocalDateTime timestamp,
     
-    private LocalDateTime timestamp;
-    private int status;
-    private String error;
-    private String message;
-    private Map<String, String> details; // Para erros de validação
+    @JsonProperty("status")
+    int status,
+    
+    @JsonProperty("error")
+    String error,
+    
+    @JsonProperty("message")
+    String message,
+    
+    @JsonProperty("details")
+    Map<String, String> details // Para erros de validação
+) {
 }
-

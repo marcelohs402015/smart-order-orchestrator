@@ -57,13 +57,13 @@ public class OrderPresentationMapper {
         }
         
         log.debug("Mapping OrderItemRequest to domain: productId={}, productName={}", 
-            request.getProductId(), request.getProductName());
+            request.productId(), request.productName());
         
         return OrderItem.builder()
-            .productId(request.getProductId())
-            .productName(request.getProductName())
-            .quantity(request.getQuantity())
-            .unitPrice(request.getUnitPrice())
+            .productId(request.productId())
+            .productName(request.productName())
+            .quantity(request.quantity())
+            .unitPrice(request.unitPrice())
             .build();
     }
     

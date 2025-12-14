@@ -132,17 +132,18 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
 **O que é:** Padrão que permite construir objetos complexos passo a passo, separando a construção da representação.
 
 **Implementação no Projeto:**
-- **Lombok @Builder:** Usado em todas as entidades, DTOs e Value Objects
+- **Lombok @Builder:** Usado em entidades de domínio e Value Objects
+- **Java Records:** Usado em todos os DTOs (imutáveis por padrão, Java 17+)
 
 **Por que usar:**
 - ✅ **Legibilidade:** Código mais limpo e expressivo
-- ✅ **Imutabilidade:** Facilita criação de objetos imutáveis
+- ✅ **Imutabilidade:** Records são imutáveis por padrão, Builder facilita construção
 - ✅ **Validação:** Pode validar durante construção
 - ✅ **Flexibilidade:** Permite construir objetos com diferentes combinações de parâmetros
 
 **📁 Código:**
 - Order Entity: [`backend/src/main/java/com/marcelo/orchestrator/domain/model/Order.java`](../backend/src/main/java/com/marcelo/orchestrator/domain/model/Order.java) (linha 54)
-- DTOs: [`backend/src/main/java/com/marcelo/orchestrator/presentation/dto/`](../backend/src/main/java/com/marcelo/orchestrator/presentation/dto/)
+- DTOs (Records): [`backend/src/main/java/com/marcelo/orchestrator/presentation/dto/`](../backend/src/main/java/com/marcelo/orchestrator/presentation/dto/)
 - Saga Command: [`backend/src/main/java/com/marcelo/orchestrator/application/saga/OrderSagaCommand.java`](../backend/src/main/java/com/marcelo/orchestrator/application/saga/OrderSagaCommand.java)
 
 **💡 Exemplo de Uso:**
@@ -511,6 +512,53 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
 **🔗 Links Externos:**
 - [Java 21 Release Notes](https://openjdk.org/projects/jdk/21/)
 - [Project Loom (Virtual Threads)](https://openjdk.org/projects/loom/)
+
+---
+
+### Java Records (Java 17+)
+
+**O que é:** Tipo de classe imutável introduzido no Java 14 (finalizado no Java 16) para representar dados de forma concisa.
+
+**Por que usar:**
+- ✅ **Imutabilidade:** Records são imutáveis por padrão, garantindo thread-safety
+- ✅ **Simplicidade:** Menos boilerplate que classes tradicionais (~30% menos código)
+- ✅ **Performance:** Menos overhead que classes tradicionais
+- ✅ **Bean Validation:** Suporta validações diretamente nos parâmetros
+- ✅ **Jackson:** Funciona perfeitamente com serialização JSON
+
+**Implementação no Projeto:**
+- **Todos os DTOs são Records:**
+  - `CreateOrderRequest` - Request para criação de pedido
+  - `OrderItemRequest` - Request para item de pedido
+  - `OrderResponse` - Response com dados do pedido
+  - `OrderItemResponse` - Response com dados do item
+  - `CreateOrderResponse` - Response da saga
+  - `ErrorResponse` - Response de erro padronizado
+
+**📁 Código:**
+- DTOs (Records): [`backend/src/main/java/com/marcelo/orchestrator/presentation/dto/`](../backend/src/main/java/com/marcelo/orchestrator/presentation/dto/)
+- Exemplo: [`backend/src/main/java/com/marcelo/orchestrator/presentation/dto/CreateOrderRequest.java`](../backend/src/main/java/com/marcelo/orchestrator/presentation/dto/CreateOrderRequest.java)
+
+**💡 Exemplo de Uso:**
+```java
+public record CreateOrderRequest(
+    @NotNull(message = "Customer ID is required")
+    @JsonProperty("customerId")
+    UUID customerId,
+    
+    @NotBlank(message = "Customer name is required")
+    @JsonProperty("customerName")
+    String customerName,
+    
+    @Email(message = "Customer email must be valid")
+    @JsonProperty("customerEmail")
+    String customerEmail
+) {}
+```
+
+**📚 Documentação Detalhada:**
+- [Melhorias Aplicadas - Records](MELHORIAS-REGRAS-JAVA.md#1-conversão-de-dtos-para-java-records) - Conversão completa e benefícios
+- [Java Records (JEP 395)](https://openjdk.org/jeps/395) - Especificação oficial
 
 ---
 
@@ -890,7 +938,7 @@ app:
 
 **📁 Código:**
 - Controller: [`backend/src/main/java/com/marcelo/orchestrator/presentation/controller/OrderController.java`](../backend/src/main/java/com/marcelo/orchestrator/presentation/controller/OrderController.java)
-- DTOs: [`backend/src/main/java/com/marcelo/orchestrator/presentation/dto/`](../backend/src/main/java/com/marcelo/orchestrator/presentation/dto/)
+- DTOs (Records): [`backend/src/main/java/com/marcelo/orchestrator/presentation/dto/`](../backend/src/main/java/com/marcelo/orchestrator/presentation/dto/)
 - Exception Handler: [`backend/src/main/java/com/marcelo/orchestrator/presentation/exception/GlobalExceptionHandler.java`](../backend/src/main/java/com/marcelo/orchestrator/presentation/exception/GlobalExceptionHandler.java)
 
 **📚 Documentação Detalhada:**
@@ -1082,6 +1130,7 @@ app:
 
 ---
 
-**📅 Última Atualização:** Dezembro 2024  
+**📅 Última Atualização:** 12/12/2025  
+**🔄 Melhorias:** DTOs convertidos para Java Records, conformidade total com regras Java  
 **👨‍💻 Mantido por:** Marcelo Hernandes da Silva
 

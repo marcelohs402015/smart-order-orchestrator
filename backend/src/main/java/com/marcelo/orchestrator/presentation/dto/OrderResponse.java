@@ -1,16 +1,14 @@
 package com.marcelo.orchestrator.presentation.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.marcelo.orchestrator.domain.model.Order;
 import com.marcelo.orchestrator.domain.model.OrderStatus;
 import com.marcelo.orchestrator.domain.model.RiskLevel;
-import lombok.Builder;
-import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * DTO de response para pedido.
@@ -26,25 +24,65 @@ import java.util.stream.Collectors;
  *   <li><strong>Performance:</strong> Pode incluir apenas campos necessários</li>
  * </ul>
  * 
+ * <h3>Por que Record?</h3>
+ * <ul>
+ *   <li><strong>Imutabilidade:</strong> Dados não podem ser alterados após criação</li>
+ *   <li><strong>Simplicidade:</strong> Menos código, mais legível (Java 17+)</li>
+ *   <li><strong>Performance:</strong> Menos overhead que classes tradicionais</li>
+ * </ul>
+ * 
+ * @param id ID do pedido
+ * @param orderNumber Número do pedido (ex: ORD-1234567890)
+ * @param status Status do pedido
+ * @param customerId ID do cliente
+ * @param customerName Nome do cliente
+ * @param customerEmail Email do cliente
+ * @param items Lista de itens do pedido
+ * @param totalAmount Valor total do pedido
+ * @param paymentId ID do pagamento no gateway externo
+ * @param riskLevel Nível de risco após análise
+ * @param createdAt Data e hora de criação
+ * @param updatedAt Data e hora da última atualização
+ * 
  * @author Marcelo
  */
-@Getter
-@Builder
-public class OrderResponse {
+public record OrderResponse(
+    @JsonProperty("id")
+    UUID id,
     
-    private UUID id;
-    private String orderNumber;
-    private OrderStatus status;
-    private UUID customerId;
-    private String customerName;
-    private String customerEmail;
-    private List<OrderItemResponse> items;
-    private BigDecimal totalAmount;
-    private String paymentId;
-    private RiskLevel riskLevel;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    @JsonProperty("orderNumber")
+    String orderNumber,
     
+    @JsonProperty("status")
+    OrderStatus status,
+    
+    @JsonProperty("customerId")
+    UUID customerId,
+    
+    @JsonProperty("customerName")
+    String customerName,
+    
+    @JsonProperty("customerEmail")
+    String customerEmail,
+    
+    @JsonProperty("items")
+    List<OrderItemResponse> items,
+    
+    @JsonProperty("totalAmount")
+    BigDecimal totalAmount,
+    
+    @JsonProperty("paymentId")
+    String paymentId,
+    
+    @JsonProperty("riskLevel")
+    RiskLevel riskLevel,
+    
+    @JsonProperty("createdAt")
+    LocalDateTime createdAt,
+    
+    @JsonProperty("updatedAt")
+    LocalDateTime updatedAt
+) {
     /**
      * Factory method para criar OrderResponse a partir de Order (domínio).
      * 
@@ -54,30 +92,29 @@ public class OrderResponse {
     public static OrderResponse from(Order order) {
         List<OrderItemResponse> itemsResponse = order.getItems() != null
             ? order.getItems().stream()
-                .map(item -> OrderItemResponse.builder()
-                    .productId(item.getProductId())
-                    .productName(item.getProductName())
-                    .quantity(item.getQuantity())
-                    .unitPrice(item.getUnitPrice())
-                    .subtotal(item.getSubtotal())
-                    .build())
-                .collect(Collectors.toList())
+                .map(item -> new OrderItemResponse(
+                    item.getProductId(),
+                    item.getProductName(),
+                    item.getQuantity(),
+                    item.getUnitPrice(),
+                    item.getSubtotal()
+                ))
+                .toList() // Java 16+ - mais conciso que Collectors.toList()
             : List.of();
         
-        return OrderResponse.builder()
-            .id(order.getId())
-            .orderNumber(order.getOrderNumber())
-            .status(order.getStatus())
-            .customerId(order.getCustomerId())
-            .customerName(order.getCustomerName())
-            .customerEmail(order.getCustomerEmail())
-            .items(itemsResponse)
-            .totalAmount(order.getTotalAmount())
-            .paymentId(order.getPaymentId())
-            .riskLevel(order.getRiskLevel())
-            .createdAt(order.getCreatedAt())
-            .updatedAt(order.getUpdatedAt())
-            .build();
+        return new OrderResponse(
+            order.getId(),
+            order.getOrderNumber(),
+            order.getStatus(),
+            order.getCustomerId(),
+            order.getCustomerName(),
+            order.getCustomerEmail(),
+            itemsResponse,
+            order.getTotalAmount(),
+            order.getPaymentId(),
+            order.getRiskLevel(),
+            order.getCreatedAt(),
+            order.getUpdatedAt()
+        );
     }
 }
-
