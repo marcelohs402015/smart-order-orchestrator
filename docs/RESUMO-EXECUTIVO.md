@@ -61,7 +61,7 @@ Content-Type: application/json
 
 - **Migração:** `backend/src/main/resources/db/migration/V1__create_orders_table.sql`
 - **Limpeza:** `backend/src/main/resources/db/scripts/clean_database.sql`
-- **Contexto Completo:** `docs/CONTEXTO-PERSISTENCIA-RESOLVIDO.md`
+- **Fase 4 - Persistência:** `docs/fases/FASE4-CAMADA-INFRASTRUCTURE-PERSISTENCIA.md` (inclui decisão arquitetural de mappers manuais)
 
 ## 🔑 Pontos-Chave
 

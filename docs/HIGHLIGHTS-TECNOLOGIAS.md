@@ -634,7 +634,7 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
 
 **📚 Documentação Detalhada:**
 - [Fase 4: Infrastructure - Persistência](fases/FASE4-CAMADA-INFRASTRUCTURE-PERSISTENCIA.md) - Mappers e conversão de entidades
-- [Contexto Persistência Resolvido](CONTEXTO-PERSISTENCIA-RESOLVIDO.md) - Mudança arquitetural: remoção do MapStruct
+- [Fase 4: Infrastructure - Persistência](fases/FASE4-CAMADA-INFRASTRUCTURE-PERSISTENCIA.md) - Mappers manuais (remoção do MapStruct por decisão arquitetural)
 
 ---
 

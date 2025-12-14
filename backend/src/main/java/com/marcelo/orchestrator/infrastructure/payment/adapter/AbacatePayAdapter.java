@@ -196,6 +196,8 @@ public class AbacatePayAdapter implements PaymentGatewayPort {
     
     /**
      * Converte resposta do AbacatePay para PaymentResult do domínio.
+     * 
+     * <p>Identifica ambiente de teste através do campo {@code devMode} retornado pela API.</p>
      */
     private PaymentResult mapToPaymentResult(AbacatePayBillingResponse response, BigDecimal originalAmount) {
         if (response == null || !response.isSuccess() || response.getData() == null) {
@@ -208,6 +210,15 @@ public class AbacatePayAdapter implements PaymentGatewayPort {
         }
         
         AbacatePayBillingResponse.AbacatePayBillingData data = response.getData();
+        
+        // Identificar ambiente de teste através do devMode
+        if (Boolean.TRUE.equals(data.getDevMode())) {
+            log.info("🧪 [DEV MODE] Payment processed in TEST environment. Payment ID: {}, Order: {}", 
+                data.getId(), data.getDescription());
+        } else {
+            log.info("✅ [PRODUCTION] Payment processed in PRODUCTION environment. Payment ID: {}", 
+                data.getId());
+        }
         
         // Mapear status do AbacatePay para PaymentStatus do domínio
         PaymentStatus status = mapAbacatePayStatus(data.getStatus());

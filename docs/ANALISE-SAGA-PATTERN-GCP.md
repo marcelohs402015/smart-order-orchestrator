@@ -4,6 +4,8 @@
 
 Baseado no artigo: [Implementing the saga pattern in Workflows](https://cloud.google.com/blog/topics/developers-practitioners/implementing-saga-pattern-workflows)
 
+> **📌 Escopo da Análise:** Esta análise foi realizada **EXCLUSIVAMENTE NO BACKEND**, pois o padrão Saga é uma arquitetura de backend para gerenciar transações distribuídas. O frontend não implementa saga pattern - ele apenas consome os resultados via REST API. GCP Workflows e AWS Step Functions são serviços de backend, não há equivalente no frontend.
+
 ---
 
 ## ✅ Implementações Alinhadas com GCP

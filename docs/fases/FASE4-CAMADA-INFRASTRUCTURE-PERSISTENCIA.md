@@ -102,6 +102,8 @@ Implementar adaptadores de persistência usando JPA/Hibernate e PostgreSQL, mant
 - **Testabilidade**: Fácil mockar e testar
 - **Manutenibilidade**: Código explícito e fácil de entender
 
+> **📌 Decisão Arquitetural:** O projeto inicialmente usava MapStruct, mas foi migrado para mappers manuais como `@Component` classes. Esta decisão foi tomada para melhor alinhamento com Arquitetura Hexagonal e SOLID (Dependency Inversion), permitindo injeção explícita de dependências e maior controle sobre o mapeamento.
+
 **Estratégia de Mapeamento:**
 - Campos simples: Mapeamento direto
 - `items`: Mapeamento customizado com `@AfterMapping`
@@ -228,7 +230,7 @@ spring:
 - [x] CRUD funcionando
 - [x] Persistência isolada da camada de domínio
 - [x] Migrations versionadas (Flyway)
-- [x] Mapeamento entre domínio e JPA (MapStruct)
+- [x] Mapeamento entre domínio e JPA (Mappers Manuais como `@Component`)
 - [x] Testes de integração com banco
 - [x] Controle de concorrência otimista
 

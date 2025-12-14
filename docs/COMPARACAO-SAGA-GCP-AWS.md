@@ -4,6 +4,8 @@
 
 Este documento compara as implementações do padrão Saga na **Google Cloud Platform (GCP)**, **Amazon Web Services (AWS)** e nossa implementação atual.
 
+> **📌 Escopo da Análise:** Esta comparação foi realizada **EXCLUSIVAMENTE NO BACKEND**, pois o padrão Saga é uma arquitetura de backend para gerenciar transações distribuídas. O frontend não implementa saga pattern - ele apenas consome os resultados via REST API. GCP Workflows e AWS Step Functions são serviços de backend, não há equivalente no frontend.
+
 ---
 
 ## 🔄 GCP: Google Cloud Workflows

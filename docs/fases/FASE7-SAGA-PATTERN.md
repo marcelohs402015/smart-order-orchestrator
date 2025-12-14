@@ -291,7 +291,8 @@ public class OrderSagaOrchestrator {
 2. **Saga com Falha no Pagamento**
    - Step 1: ✅ Sucesso
    - Step 2: ❌ Falha
-   - Compensação: ✅ Pedido cancelado
+   - Compensação: ✅ Status mantido como `PAYMENT_FAILED` (não muda para `CANCELED`)
+   - **Nota:** O status `PAYMENT_FAILED` é mantido para permitir que o frontend identifique corretamente a causa da falha
 
 3. **Saga com Falha na Análise**
    - Step 1: ✅ Sucesso
