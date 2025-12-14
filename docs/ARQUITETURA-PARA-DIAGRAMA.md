@@ -191,7 +191,8 @@
 - **OrderItemRequest/Response**: DTOs para itens
 
 #### Mappers
-- **OrderMapper** (MapStruct): Mapeia DTOs ↔ Domain Objects
+- **OrderPresentationMapper** (@Component): Mapeia DTOs ↔ Domain Objects (Presentation Layer)
+- **OrderPersistenceMapper** (@Component): Mapeia Domain ↔ JPA Entities (Infrastructure Layer)
 
 #### Exception Handling
 - **GlobalExceptionHandler**: Tratamento centralizado de exceções
@@ -482,7 +483,7 @@ Presentation → Application → Domain ← Infrastructure
 - ✅ Spring MVC (REST controllers)
 - ✅ Bean Validation (validação)
 - ✅ SpringDoc OpenAPI (documentação)
-- ✅ MapStruct (mapeamento DTOs)
+- ✅ Mappers Manuais (@Component - injeção explícita)
 
 ---
 

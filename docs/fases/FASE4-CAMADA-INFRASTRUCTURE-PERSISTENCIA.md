@@ -86,20 +86,21 @@ Implementar adaptadores de persistência usando JPA/Hibernate e PostgreSQL, mant
 - **Inversão de Dependência**: Domínio não conhece esta implementação
 - **Testabilidade**: Fácil mockar para testes
 
-### 4. Mappers (MapStruct)
+### 4. Mappers (Manuais - Spring Components)
 
-#### OrderMapper
+#### OrderPersistenceMapper
 
 **Características:**
-- Interface MapStruct
-- Métodos: `toEntity()`, `toDomain()`, `updateEntity()`
-- Mapeamento automático de campos com mesmo nome
+- Classe `@Component` com injeção explícita de dependências
+- Métodos: `toEntity()`, `toDomain()`, `updateEntity()`, `mapItemsToEntity()`, `mapItemsToDomain()`
+- Mapeamento manual com controle total sobre lógica
 - Mapeamento customizado para `items` (relacionamento One-to-Many)
 
-**Por que MapStruct?**
-- **Type Safety**: Compilação-time, não runtime
-- **Performance**: Geração de código, não reflection
-- **Manutenibilidade**: Fácil adicionar novos campos
+**Por que Mappers Manuais?**
+- **Dependency Inversion (SOLID)**: Injeção explícita, controle total
+- **Arquitetura Hexagonal**: Alinhado com princípios de inversão de controle
+- **Testabilidade**: Fácil mockar e testar
+- **Manutenibilidade**: Código explícito e fácil de entender
 
 **Estratégia de Mapeamento:**
 - Campos simples: Mapeamento direto

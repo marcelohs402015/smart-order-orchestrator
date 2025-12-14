@@ -29,22 +29,18 @@ private List<OrderItemEntity> items = new ArrayList<>();
 - `@Builder.Default` garante que a lista seja sempre inicializada
 - Evita `null` que quebra o gerenciamento do JPA
 
-### 2. Ajuste no `@AfterMapping` do `OrderMapper`
+### 2. Ajuste no `OrderPersistenceMapper` (Mapper Manual)
 
 ```java
-@AfterMapping
-default void mapItemsAfterMapping(Order order, @MappingTarget OrderEntity entity) {
-    // Garantir inicialização
+private void mapItemsAfterMapping(Order order, OrderEntity entity) {
     if (entity.getItems() == null) {
-        entity.setItems(new java.util.ArrayList<>());
+        entity.setItems(new ArrayList<>());
     }
     
     if (order != null && order.getItems() != null && !order.getItems().isEmpty()) {
-        // Limpar apenas se necessário
         if (!entity.getItems().isEmpty()) {
             entity.getItems().clear();
         }
-        // Adicionar na lista existente (mantém referência gerenciada)
         List<OrderItemEntity> newItems = mapItemsToEntity(order.getItems(), entity);
         entity.getItems().addAll(newItems);
     }
@@ -55,6 +51,7 @@ default void mapItemsAfterMapping(Order order, @MappingTarget OrderEntity entity
 - Não usa `setItems()` diretamente (evita nova referência)
 - Usa `clear()` + `addAll()` na lista existente
 - Mantém a referência gerenciada pelo JPA
+- **Mapper manual como `@Component`** - Injeção explícita, alinhado com SOLID
 
 ### 3. Script de Migração Único Recriado
 
@@ -188,11 +185,30 @@ Ao iniciar, o Flyway automaticamente:
 ## 🔗 Arquivos Modificados
 
 1. `backend/src/main/java/com/marcelo/orchestrator/infrastructure/persistence/entity/OrderEntity.java`
-2. `backend/src/main/java/com/marcelo/orchestrator/infrastructure/persistence/mapper/OrderMapper.java`
-3. `backend/src/main/java/com/marcelo/orchestrator/infrastructure/persistence/adapter/OrderRepositoryAdapter.java`
-4. `backend/src/main/resources/db/migration/V1__create_orders_table.sql`
-5. `backend/src/test/java/com/marcelo/orchestrator/application/usecase/AnalyzeRiskUseCaseTest.java`
-6. `backend/src/test/java/com/marcelo/orchestrator/application/saga/OrderSagaOrchestratorTest.java`
+2. `backend/src/main/java/com/marcelo/orchestrator/infrastructure/persistence/mapper/OrderPersistenceMapper.java` (Mapper manual como `@Component`)
+3. `backend/src/main/java/com/marcelo/orchestrator/presentation/mapper/OrderPresentationMapper.java` (Mapper manual como `@Component`)
+4. `backend/src/main/java/com/marcelo/orchestrator/infrastructure/persistence/adapter/OrderRepositoryAdapter.java`
+5. `backend/src/main/resources/db/migration/V1__create_orders_table.sql`
+6. `backend/src/test/java/com/marcelo/orchestrator/application/usecase/AnalyzeRiskUseCaseTest.java`
+7. `backend/src/test/java/com/marcelo/orchestrator/application/saga/OrderSagaOrchestratorTest.java`
+
+## 🔄 Mudança Arquitetural: Remoção do MapStruct
+
+**Data:** 12/12/2025
+
+**Decisão:** Remover MapStruct e implementar mappers manuais como `@Component` classes.
+
+**Razões:**
+1. **Dependency Inversion (SOLID):** Mappers manuais permitem injeção explícita de dependências
+2. **Arquitetura Hexagonal:** Controle total sobre mapeamento, sem dependências de annotation processing
+3. **Testabilidade:** Mais fácil mockar e testar mappers manuais
+4. **Manutenibilidade:** Código mais explícito e fácil de entender
+
+**Implementação:**
+- `OrderPresentationMapper` - `@Component` com métodos `toDomain()` e `toDomainList()`
+- `OrderPersistenceMapper` - `@Component` com métodos `toEntity()`, `toDomain()`, `updateEntity()`, etc.
+- Removidas todas as dependências MapStruct do `pom.xml`
+- Removidas configurações de annotation processing
 
 ## 🎯 Próximos Passos
 

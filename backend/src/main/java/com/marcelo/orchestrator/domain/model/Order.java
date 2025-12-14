@@ -125,7 +125,7 @@ public class Order {
      * Atualizado automaticamente em mudanças de estado.
      */
     private LocalDateTime updatedAt;
-    
+
     /**
      * Calcula o valor total do pedido baseado nos itens.
      * 

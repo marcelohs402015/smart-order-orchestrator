@@ -5,7 +5,7 @@ import com.marcelo.orchestrator.domain.model.OrderStatus;
 import com.marcelo.orchestrator.domain.port.OrderRepositoryPort;
 import com.marcelo.orchestrator.infrastructure.persistence.entity.OrderEntity;
 import com.marcelo.orchestrator.infrastructure.persistence.entity.OrderItemEntity;
-import com.marcelo.orchestrator.infrastructure.persistence.mapper.OrderMapper;
+import com.marcelo.orchestrator.infrastructure.persistence.mapper.OrderPersistenceMapper;
 import com.marcelo.orchestrator.infrastructure.persistence.repository.JpaOrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,9 +36,9 @@ import java.util.UUID;
  *   <li>Tratar erros de persistência</li>
  * </ul>
  * 
- * <h3>Mapeamento:</h3>
- * <p>Usa MapStruct para conversão automática entre domínio e JPA.
- * Isso reduz boilerplate e garante consistência.</p>
+    * <h3>Mapeamento:</h3>
+    * <p>Usa OrderPersistenceMapper para conversão explícita entre domínio e JPA.
+    * Código visível e manutenível, alinhado com Arquitetura Hexagonal.</p>
  * 
  * @author Marcelo
  */
@@ -48,7 +48,7 @@ import java.util.UUID;
 public class OrderRepositoryAdapter implements OrderRepositoryPort {
     
     private final JpaOrderRepository jpaOrderRepository;
-    private final OrderMapper orderMapper;
+    private final OrderPersistenceMapper orderMapper;
     
     @Override
     public Order save(Order order) {

@@ -68,7 +68,8 @@ Content-Type: application/json
 1. **Idempotência:** Sistema gera hash SHA-256 se `idempotencyKey` não fornecida
 2. **Saga Pattern:** Orquestração completa (criar → pagar → analisar risco)
 3. **Hexagonal Architecture:** Ports e Adapters implementados corretamente
-4. **Testes:** Todos usando Ports (domínio), não implementações
+4. **Mappers Manuais:** Implementação explícita com `@Component`, alinhada com SOLID e Hexagonal
+5. **Testes:** Todos usando Ports (domínio), não implementações
 
 ---
 

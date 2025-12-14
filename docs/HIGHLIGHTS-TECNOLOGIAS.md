@@ -618,21 +618,23 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
 
 ---
 
-### MapStruct
+### Mappers Manuais (Spring Components)
 
-**O que é:** Gerador de código para mappers type-safe entre camadas.
+**O que é:** Implementação explícita de mappers como classes `@Component` com injeção de dependência.
 
 **Por que usar:**
-- ✅ **Type-safe:** Erros em tempo de compilação
-- ✅ **Performático:** Geração de código, sem overhead de runtime
-- ✅ **Reduz boilerplate:** Mapeamento automático entre Domain e Infrastructure
+- ✅ **Dependency Inversion (SOLID):** Injeção explícita de dependências, controle total
+- ✅ **Arquitetura Hexagonal:** Alinhado com princípios de inversão de controle
+- ✅ **Testabilidade:** Fácil de mockar e testar
+- ✅ **Manutenibilidade:** Código explícito e fácil de entender
 
 **📁 Código:**
-- Order Mapper: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/persistence/mapper/OrderMapper.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/persistence/mapper/OrderMapper.java)
-- Presentation Mapper: [`backend/src/main/java/com/marcelo/orchestrator/presentation/mapper/OrderMapper.java`](../backend/src/main/java/com/marcelo/orchestrator/presentation/mapper/OrderMapper.java)
+- Order Persistence Mapper: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/persistence/mapper/OrderPersistenceMapper.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/persistence/mapper/OrderPersistenceMapper.java)
+- Order Presentation Mapper: [`backend/src/main/java/com/marcelo/orchestrator/presentation/mapper/OrderPresentationMapper.java`](../backend/src/main/java/com/marcelo/orchestrator/presentation/mapper/OrderPresentationMapper.java)
 
 **📚 Documentação Detalhada:**
 - [Fase 4: Infrastructure - Persistência](fases/FASE4-CAMADA-INFRASTRUCTURE-PERSISTENCIA.md) - Mappers e conversão de entidades
+- [Contexto Persistência Resolvido](CONTEXTO-PERSISTENCIA-RESOLVIDO.md) - Mudança arquitetural: remoção do MapStruct
 
 ---
 
@@ -1043,7 +1045,7 @@ app:
 | **Banco de Dados** | PostgreSQL | Latest | ACID, robustez |
 | **Resiliência** | Resilience4j | 2.1.0 | Circuit Breaker, Retry, Fallback |
 | **Migrations** | Flyway | Latest | Versionamento de schema |
-| **Mapeamento** | MapStruct | 1.5.5 | Type-safe mappers |
+| **Mapeamento** | Mappers Manuais | - | Injeção explícita, alinhado com Hexagonal |
 | **Boilerplate** | Lombok | 1.18.30 | Redução de código |
 | **Documentação** | SpringDoc | 2.3.0 | Swagger/OpenAPI |
 | **HTTP Reativo** | WebFlux | 3.2+ | WebClient para integrações |

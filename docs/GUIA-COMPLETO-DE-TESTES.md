@@ -719,7 +719,7 @@ void shouldCalculateTotalCorrectly() {
 
 **Não precisa testar:**
 - Getters/Setters (Lombok)
-- Mappers simples (MapStruct)
+- Mappers simples (métodos de conversão direta sem lógica complexa)
 - DTOs simples
 
 ### 6. Testes Rápidos

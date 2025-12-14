@@ -12,7 +12,7 @@ Configurar o projeto e estabelecer a estrutura base da Arquitetura Hexagonal, pr
 - **Java 21**: Suporte a Virtual Threads (Project Loom) para alta concorrência
 - **Spring Boot 3.2+**: Framework moderno com suporte nativo a Virtual Threads
 - **Lombok**: Redução de boilerplate (getters, setters, builders)
-- **MapStruct**: Geração de código para mappers entre camadas
+- **Mappers Manuais**: Implementação explícita como `@Component` classes
 - **Resilience4j**: Circuit Breaker, Retry e Fallback para resiliência
 - **Spring Data JPA**: Persistência com PostgreSQL
 - **Flyway**: Migrations versionadas do banco de dados
@@ -22,7 +22,7 @@ Configurar o projeto e estabelecer a estrutura base da Arquitetura Hexagonal, pr
 - **Java 21**: Virtual Threads permitem milhares de requisições simultâneas com baixo consumo de memória
 - **Spring Boot 3.2+**: Framework enterprise com autoconfiguração e suporte a tecnologias modernas
 - **Lombok**: Reduz código boilerplate mantendo legibilidade
-- **MapStruct**: Mapeamento type-safe e performático entre camadas
+- **Mappers Manuais**: Injeção explícita de dependências, alinhado com SOLID e Hexagonal
 - **Resilience4j**: Padrão enterprise para resiliência em sistemas distribuídos
 
 ### 2. Estrutura de Pacotes (Arquitetura Hexagonal)
@@ -118,7 +118,7 @@ Presentation → Application → Domain ← Infrastructure
 
 ### Utilitários
 - `lombok`: Redução de boilerplate
-- `mapstruct`: Mapeamento entre camadas
+- Mappers manuais: Implementação explícita como `@Component` classes
 - `spring-boot-starter-webflux`: WebClient para HTTP reativo
 
 ## 🚀 Como Rodar

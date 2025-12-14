@@ -7,7 +7,7 @@ import com.marcelo.orchestrator.domain.port.OrderRepositoryPort;
 import com.marcelo.orchestrator.presentation.dto.CreateOrderRequest;
 import com.marcelo.orchestrator.presentation.dto.CreateOrderResponse;
 import com.marcelo.orchestrator.presentation.dto.OrderResponse;
-import com.marcelo.orchestrator.presentation.mapper.OrderMapper;
+import com.marcelo.orchestrator.presentation.mapper.OrderPresentationMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -54,7 +54,7 @@ public class OrderController {
     
     private final OrderSagaOrchestrator sagaOrchestrator;
     private final OrderRepositoryPort orderRepository;
-    private final OrderMapper orderMapper;
+    private final OrderPresentationMapper orderMapper;
     
     /**
      * Cria um novo pedido executando a saga completa.
@@ -90,7 +90,7 @@ public class OrderController {
             : generateIdempotencyKey(request); // Hash determinístico dos dados da requisição
         
         // Converter DTO para Command
-        // Padrão: Dependency Injection - OrderMapper é injetado via construtor (SOLID)
+        // Padrão: Dependency Injection - OrderPresentationMapper é injetado via construtor (SOLID)
         OrderSagaCommand command = OrderSagaCommand.builder()
             .idempotencyKey(idempotencyKey)
             .customerId(request.getCustomerId())

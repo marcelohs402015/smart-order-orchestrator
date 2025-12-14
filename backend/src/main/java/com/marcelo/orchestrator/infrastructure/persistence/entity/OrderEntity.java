@@ -28,7 +28,7 @@ import java.util.UUID;
  * </ul>
  * 
  * <h3>Mapeamento:</h3>
- * <p>Esta entidade será mapeada para/do domínio usando MapStruct.
+ * <p>Esta entidade será mapeada para/do domínio usando OrderPersistenceMapper.
  * O adapter na Infrastructure faz a conversão entre OrderEntity e Order.</p>
  * 
  * <h3>Estratégia de Mapeamento:</h3>

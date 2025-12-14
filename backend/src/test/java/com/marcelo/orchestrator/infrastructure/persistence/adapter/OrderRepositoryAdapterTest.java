@@ -5,7 +5,7 @@ import com.marcelo.orchestrator.domain.model.OrderItem;
 import com.marcelo.orchestrator.domain.model.OrderStatus;
 import com.marcelo.orchestrator.domain.model.RiskLevel;
 import com.marcelo.orchestrator.infrastructure.persistence.entity.OrderEntity;
-import com.marcelo.orchestrator.infrastructure.persistence.mapper.OrderMapper;
+import com.marcelo.orchestrator.infrastructure.persistence.mapper.OrderPersistenceMapper;
 import com.marcelo.orchestrator.infrastructure.persistence.repository.JpaOrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,7 +46,7 @@ class OrderRepositoryAdapterTest {
     private JpaOrderRepository jpaOrderRepository;
     
     @Mock
-    private OrderMapper orderMapper;
+    private OrderPersistenceMapper orderMapper;
     
     @InjectMocks
     private OrderRepositoryAdapter adapter;
