@@ -67,7 +67,7 @@ EventPublisherPort publisher = eventPublisherFactory.create();
 - **OrderRepositoryAdapter:** Adapta OrderRepositoryPort (domínio) para JPA (infraestrutura)
 - **AbacatePayAdapter:** Adapta PaymentGatewayPort (domínio) para API REST (infraestrutura)
 - **OpenAIRiskAnalysisAdapter:** Adapta RiskAnalysisPort (domínio) para OpenAI API (infraestrutura)
-- **PubSubEventPublisherAdapter, RabbitMqEventPublisherAdapter, InMemoryEventPublisherAdapter:** Adaptam EventPublisherPort para diferentes message brokers
+- **KafkaEventPublisherAdapter, RabbitMqEventPublisherAdapter, InMemoryEventPublisherAdapter:** Adaptam EventPublisherPort para diferentes message brokers
 
 **Por que usar:**
 - ✅ **Isolamento:** Domínio não conhece JPA, HTTP, Pub/Sub
@@ -385,7 +385,7 @@ case SQS -> new SqsEventPublisherAdapter();
 **💡 Exemplo:**
 ```java
 // ✅ Qualquer implementação pode substituir a interface
-EventPublisherPort publisher = new PubSubEventPublisherAdapter(); // Produção (GCP)
+EventPublisherPort publisher = new KafkaEventPublisherAdapter(); // Produção (Kafka)
 EventPublisherPort publisher = new InMemoryEventPublisherAdapter(); // Testes
 EventPublisherPort publisher = new RabbitMqEventPublisherAdapter(); // Alternativa
 // Código cliente não precisa mudar!
@@ -801,7 +801,7 @@ public record CreateOrderRequest(
 **📁 Código:**
 - Factory: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/factory/EventPublisherFactory.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/factory/EventPublisherFactory.java)
 - Port (Interface): [`backend/src/main/java/com/marcelo/orchestrator/domain/port/EventPublisherPort.java`](../backend/src/main/java/com/marcelo/orchestrator/domain/port/EventPublisherPort.java)
-- Pub/Sub Adapter: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/PubSubEventPublisherAdapter.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/PubSubEventPublisherAdapter.java) - **Produção (GCP)**
+- Kafka Adapter: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/KafkaEventPublisherAdapter.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/KafkaEventPublisherAdapter.java) - **Produção (Kafka)**
 - In-Memory Adapter: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/InMemoryEventPublisherAdapter.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/InMemoryEventPublisherAdapter.java) - **Desenvolvimento/Testes**
 - RabbitMQ Adapter: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/RabbitMqEventPublisherAdapter.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/adapter/RabbitMqEventPublisherAdapter.java) - **Alternativa**
 - Configuração: [`backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/config/EventPublisherConfig.java`](../backend/src/main/java/com/marcelo/orchestrator/infrastructure/messaging/config/EventPublisherConfig.java)

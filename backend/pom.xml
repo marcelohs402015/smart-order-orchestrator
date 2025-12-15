@@ -117,6 +117,12 @@
             <version>${resilience4j.version}</version>
         </dependency>
         
+        <!-- Spring Kafka: Integração com Apache Kafka para Event-Driven Architecture -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+        
         <!-- Lombok: Anotações para reduzir boilerplate (@Getter, @Builder, @RequiredArgsConstructor) -->
         <dependency>
             <groupId>org.projectlombok</groupId>

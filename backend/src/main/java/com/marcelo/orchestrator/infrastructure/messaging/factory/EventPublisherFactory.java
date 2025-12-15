@@ -2,10 +2,7 @@ package com.marcelo.orchestrator.infrastructure.messaging.factory;
 
 import com.marcelo.orchestrator.domain.port.EventPublisherPort;
 import com.marcelo.orchestrator.infrastructure.messaging.adapter.InMemoryEventPublisherAdapter;
-// TODO: Quando implementar outros brokers, descomentar:
-// import com.marcelo.orchestrator.infrastructure.messaging.adapter.KafkaEventPublisherAdapter;
-// import com.marcelo.orchestrator.infrastructure.messaging.adapter.PubSubEventPublisherAdapter;
-// import com.marcelo.orchestrator.infrastructure.messaging.adapter.RabbitMqEventPublisherAdapter;
+import com.marcelo.orchestrator.infrastructure.messaging.adapter.KafkaEventPublisherAdapter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -37,7 +34,6 @@ import org.springframework.stereotype.Component;
  * <ul>
  *   <li><strong>IN_MEMORY:</strong> Implementação em memória (para testes e desenvolvimento)</li>
  *   <li><strong>KAFKA:</strong> Apache Kafka (alta performance, escalável)</li>
- *   <li><strong>PUBSUB:</strong> Google Cloud Pub/Sub (GCP nativo, serverless)</li>
  *   <li><strong>RABBITMQ:</strong> RabbitMQ (AMQP, fácil de usar)</li>
  *   <li><strong>SQS:</strong> AWS SQS (AWS nativo, serverless)</li>
  * </ul>
@@ -68,21 +64,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class EventPublisherFactory {
     
+    // Injeção opcional - KafkaEventPublisherAdapter só existe quando app.message.broker.type=KAFKA
+    
     /**
      * Tipo de message broker a ser usado.
      * 
-     * <p>Configurado via propriedade: {@code app.message.broker.type}</p>
-     * <p>Valores possíveis: IN_MEMORY, KAFKA, PUBSUB, RABBITMQ, SQS</p>
+ * <p>Configurado via propriedade: {@code app.message.broker.type}</p>
+ * <p>Valores possíveis: IN_MEMORY, KAFKA, RABBITMQ, SQS</p>
      */
     @Value("${app.message.broker.type:IN_MEMORY}")
     private String brokerType;
     
     private final InMemoryEventPublisherAdapter inMemoryAdapter;
-    
-    // TODO: Quando implementar outros message brokers, adicionar aqui como opcionais:
-    // private final KafkaEventPublisherAdapter kafkaAdapter;
-    // private final PubSubEventPublisherAdapter pubSubAdapter;
-    // private final RabbitMqEventPublisherAdapter rabbitMqAdapter;
+    private final KafkaEventPublisherAdapter kafkaAdapter;
     
     /**
      * Construtor com injeção de dependências.
@@ -90,17 +84,18 @@ public class EventPublisherFactory {
      * <p>Padrão: Dependency Injection (Spring) - permite que Spring gerencie
      * o ciclo de vida dos adapters.</p>
      * 
-     * <p>Atualmente usa apenas InMemoryAdapter. Para adicionar outros brokers
-     * (Kafka, Pub/Sub, RabbitMQ), adicionar como parâmetros opcionais no construtor
-     * e no método create().</p>
+     * <p>KafkaEventPublisherAdapter é opcional (pode ser null se Kafka não estiver configurado).
+     * Usa {@code @org.springframework.lang.Nullable} para indicar que pode ser null.
+     * Isso permite que a aplicação funcione mesmo sem Kafka, usando fallback para IN_MEMORY.</p>
+     * 
+     * <p>Alinhado com SOLID - Dependency Inversion Principle: Factory depende de abstrações
+     * (EventPublisherPort), não de implementações concretas.</p>
      */
-    public EventPublisherFactory(InMemoryEventPublisherAdapter inMemoryAdapter) {
+    public EventPublisherFactory(
+            InMemoryEventPublisherAdapter inMemoryAdapter,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) KafkaEventPublisherAdapter kafkaAdapter) {
         this.inMemoryAdapter = inMemoryAdapter;
-        
-        // TODO: Quando implementar outros brokers, adicionar como parâmetros opcionais:
-        // KafkaEventPublisherAdapter kafkaAdapter,
-        // PubSubEventPublisherAdapter pubSubAdapter,
-        // RabbitMqEventPublisherAdapter rabbitMqAdapter
+        this.kafkaAdapter = kafkaAdapter;
     }
     
     /**
@@ -122,20 +117,15 @@ public class EventPublisherFactory {
                 log.debug("Using InMemoryEventPublisherAdapter (for tests/dev)");
                 yield inMemoryAdapter;
             }
-            case KAFKA, PUBSUB, RABBITMQ, SQS -> {
-                // TODO: Quando implementar outros brokers, descomentar e adicionar lógica:
-                // case KAFKA -> {
-                //     if (kafkaAdapter == null) {
-                //         log.warn("KafkaEventPublisherAdapter not available, falling back to IN_MEMORY");
-                //         yield inMemoryAdapter;
-                //     }
-                //     log.debug("Using KafkaEventPublisherAdapter");
-                //     yield kafkaAdapter;
-                // }
-                // case PUBSUB -> { ... }
-                // case RABBITMQ -> { ... }
-                // case SQS -> { ... }
-                
+            case KAFKA -> {
+                if (kafkaAdapter == null) {
+                    log.warn("KafkaEventPublisherAdapter not available, falling back to IN_MEMORY");
+                    yield inMemoryAdapter;
+                }
+                log.debug("Using KafkaEventPublisherAdapter");
+                yield kafkaAdapter;
+            }
+            case RABBITMQ, SQS -> {
                 log.warn("Broker type '{}' not yet implemented, falling back to IN_MEMORY", type);
                 yield inMemoryAdapter;
             }
@@ -151,7 +141,6 @@ public class EventPublisherFactory {
     public enum MessageBrokerType {
         IN_MEMORY("IN_MEMORY"),
         KAFKA("KAFKA"),
-        PUBSUB("PUBSUB"),
         RABBITMQ("RABBITMQ"),
         SQS("SQS");
         

@@ -75,6 +75,29 @@ spring:
     debug: false
 
 # ============================================================================
+# Kafka Configuration
+# ============================================================================
+# Configuração do Apache Kafka para publicação de eventos de domínio.
+# 
+# Padrão: Event-Driven Architecture - eventos são publicados de forma assíncrona,
+# permitindo desacoplamento entre serviços e escalabilidade horizontal.
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all # Garante que todas as réplicas confirmem (durabilidade)
+      retries: 3 # Retenta em caso de falha transitória
+      properties:
+        enable.idempotence: true # Garante idempotência do producer
+        max.in.flight.requests.per.connection: 1 # Garante ordem (com idempotence)
+        spring.json.type.mapping: |
+          orderCreated:com.marcelo.orchestrator.domain.event.saga.OrderCreatedEvent,
+          paymentProcessed:com.marcelo.orchestrator.domain.event.saga.PaymentProcessedEvent,
+          sagaCompleted:com.marcelo.orchestrator.domain.event.saga.SagaCompletedEvent,
+          sagaFailed:com.marcelo.orchestrator.domain.event.saga.SagaFailedEvent
+
+# ============================================================================
 # AbacatePay Configuration
 # ============================================================================
 # Configuração da API do AbacatePay (Gateway de Pagamento).
@@ -134,7 +157,7 @@ resilience4j:
 # Message Broker Configuration (Event-Driven Architecture)
 # ============================================================================
 # Configuração para publicação de eventos usando Factory Pattern.
-# Permite trocar message broker (Kafka, Pub/Sub, RabbitMQ) via configuração.
+# Permite trocar message broker (Kafka, RabbitMQ) via configuração.
 #
 # Padrão: Factory Pattern - EventPublisherFactory cria instância correta
 # baseada nesta propriedade, sem alterar código.
@@ -142,13 +165,19 @@ resilience4j:
 # Tipos suportados:
 #   - IN_MEMORY: Para testes e desenvolvimento (padrão)
 #   - KAFKA: Apache Kafka (alta performance, escalável)
-#   - PUBSUB: Google Cloud Pub/Sub (GCP nativo, serverless)
 #   - RABBITMQ: RabbitMQ (AMQP, fácil de usar)
 #   - SQS: AWS SQS (AWS nativo, serverless)
 app:
   message:
     broker:
-      type: ${MESSAGE_BROKER_TYPE:IN_MEMORY} # Padrão: IN_MEMORY para desenvolvimento
+      # Execução local: Kafka por padrão (pode sobrescrever via variável de ambiente)
+      type: ${MESSAGE_BROKER_TYPE:KAFKA}
+      kafka:
+        topics:
+          order-created: ${KAFKA_TOPIC_ORDER_CREATED:order-created}
+          payment-processed: ${KAFKA_TOPIC_PAYMENT_PROCESSED:payment-processed}
+          saga-completed: ${KAFKA_TOPIC_SAGA_COMPLETED:saga-completed}
+          saga-failed: ${KAFKA_TOPIC_SAGA_FAILED:saga-failed}
 
 # ============================================================================
 # Actuator (Health Checks & Metrics)
@@ -191,7 +220,7 @@ debug: false
 # Server Configuration
 # ============================================================================
 server:
-  port: 8080
+  port: 8081
   error:
     include-message: always
     include-binding-errors: always

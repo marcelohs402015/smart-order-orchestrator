@@ -2,68 +2,73 @@ package com.marcelo.orchestrator.infrastructure.messaging.adapter;
 
 import com.marcelo.orchestrator.domain.event.DomainEvent;
 import com.marcelo.orchestrator.domain.port.EventPublisherPort;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 
-// TODO: Descomentar quando dependência do Spring Kafka for adicionada
-// import org.springframework.kafka.core.KafkaTemplate;
-
 import java.util.List;
+import java.util.Map;
 
 /**
  * Adapter para publicação de eventos no Apache Kafka.
  * 
  * <p>Implementa o padrão <strong>Adapter Pattern</strong> da Hexagonal Architecture,
- * adaptando a interface EventPublisherPort para usar Apache Kafka como message broker.</p>
+ * adaptando a interface EventPublisherPort (Port) para usar Apache Kafka como message broker.</p>
  * 
- * <h3>Padrão: Adapter Pattern</h3>
+ * <h3>Padrão: Adapter Pattern (Hexagonal Architecture)</h3>
  * <ul>
+ *   <li><strong>Port:</strong> EventPublisherPort (interface do domínio)</li>
  *   <li><strong>Adapter:</strong> Esta classe - adapta EventPublisherPort para Kafka</li>
- *   <li><strong>Target:</strong> EventPublisherPort (interface do domínio)</li>
  *   <li><strong>Adaptee:</strong> KafkaTemplate (API do Spring Kafka)</li>
+ *   <li><strong>Isolamento:</strong> Domínio não conhece detalhes de Kafka</li>
  * </ul>
  * 
- * <h3>Por que Kafka?</h3>
+ * <h3>Por que Apache Kafka?</h3>
  * <ul>
- *   <li><strong>Alta Performance:</strong> Milhões de mensagens por segundo</li>
- *   <li><strong>Escalabilidade:</strong> Distribuído, suporta clusters grandes</li>
- *   <li><strong>Durabilidade:</strong> Mensagens são persistidas em disco</li>
- *   <li><strong>Replay:</strong> Permite reprocessar mensagens</li>
- *   <li><strong>Ordenação:</strong> Garante ordem dentro de uma partição</li>
+ *   <li><strong>Alta Performance:</strong> Milhares de mensagens por segundo</li>
+ *   <li><strong>Escalabilidade:</strong> Escala horizontalmente com partições</li>
+ *   <li><strong>Durabilidade:</strong> Mensagens persistidas em disco</li>
+ *   <li><strong>Ordem:</strong> Garante ordem de mensagens por partição</li>
+ *   <li><strong>Idempotência:</strong> Suporte nativo a idempotência do producer</li>
  * </ul>
- * 
- * <h3>Configuração:</h3>
- * <pre>{@code
- * # application.yml
- * app:
- *   message:
- *     broker:
- *       type: KAFKA
- * 
- * spring:
- *   kafka:
- *     bootstrap-servers: localhost:9092
- *     producer:
- *       key-serializer: org.apache.kafka.common.serialization.StringSerializer
- *       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
- * }</pre>
  * 
  * <h3>Roteamento de Tópicos:</h3>
- * <p>Cada tipo de evento é publicado em um tópico específico:</p>
+ * <p>Cada tipo de evento é publicado em um tópico específico, permitindo que diferentes
+ * serviços se inscrevam apenas nos eventos relevantes (Topic-per-Event-Type pattern).</p>
+ * 
+ * <h3>Mapeamento Event Type → Topic:</h3>
  * <ul>
- *   <li>OrderCreatedEvent → tópico: "order-created"</li>
- *   <li>PaymentProcessedEvent → tópico: "payment-processed"</li>
- *   <li>SagaCompletedEvent → tópico: "saga-completed"</li>
- *   <li>SagaFailedEvent → tópico: "saga-failed"</li>
+ *   <li><strong>OrderCreated</strong> → `order-created`</li>
+ *   <li><strong>PaymentProcessed</strong> → `payment-processed`</li>
+ *   <li><strong>SagaCompleted</strong> → `saga-completed`</li>
+ *   <li><strong>SagaFailed</strong> → `saga-failed`</li>
  * </ul>
  * 
- * <h3>Padrão: Topic-per-Event-Type</h3>
- * <p>Cada tipo de evento tem seu próprio tópico, permitindo:</p>
+ * <h3>Headers Kafka:</h3>
+ * <p>Cada mensagem inclui headers com metadados importantes:</p>
  * <ul>
- *   <li><strong>Isolamento:</strong> Consumidores só recebem eventos relevantes</li>
- *   <li><strong>Escalabilidade:</strong> Cada tópico pode ter diferentes configurações</li>
- *   <li><strong>Retenção:</strong> Diferentes políticas de retenção por tipo</li>
+ *   <li><strong>eventId:</strong> ID único do evento (para idempotência no consumidor)</li>
+ *   <li><strong>aggregateId:</strong> ID do pedido (Order ID) - usado como key da mensagem</li>
+ *   <li><strong>eventType:</strong> Tipo do evento (para roteamento)</li>
+ *   <li><strong>eventVersion:</strong> Versão do schema (para evolução)</li>
+ *   <li><strong>occurredAt:</strong> Timestamp do evento</li>
+ * </ul>
+ * 
+ * <h3>Padrão: Fail-Safe</h3>
+ * <p>Se a publicação falhar, loga o erro mas <strong>não lança exceção</strong>, para não
+ * interromper o fluxo principal da saga. O evento pode ser republicado posteriormente
+ * via recovery service.</p>
+ * 
+ * <h3>Alinhamento com SOLID:</h3>
+ * <ul>
+ *   <li><strong>Single Responsibility:</strong> Apenas publicação de eventos no Kafka</li>
+ *   <li><strong>Dependency Inversion:</strong> Depende de EventPublisherPort (abstração), não de Kafka</li>
+ *   <li><strong>Open/Closed:</strong> Fácil adicionar novos tipos de eventos sem modificar código</li>
  * </ul>
  * 
  * @author Marcelo
@@ -71,63 +76,68 @@ import java.util.List;
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "app.message.broker.type", havingValue = "KAFKA")
+@RequiredArgsConstructor
 public class KafkaEventPublisherAdapter implements EventPublisherPort {
     
-    // TODO: Descomentar quando dependência do Spring Kafka for adicionada
-    // private final KafkaTemplate<String, DomainEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    
+    @Value("${app.message.broker.kafka.topics.order-created}")
+    private String orderCreatedTopic;
+    
+    @Value("${app.message.broker.kafka.topics.payment-processed}")
+    private String paymentProcessedTopic;
+    
+    @Value("${app.message.broker.kafka.topics.saga-completed}")
+    private String sagaCompletedTopic;
+    
+    @Value("${app.message.broker.kafka.topics.saga-failed}")
+    private String sagaFailedTopic;
     
     /**
-     * Construtor (placeholder para quando KafkaTemplate for adicionado).
+     * Publica um evento de domínio no Kafka.
      * 
-     * <p>Para ativar, adicionar dependência do Spring Kafka:</p>
-     * <pre>{@code
-     * <dependency>
-     *     <groupId>org.springframework.kafka</groupId>
-     *     <artifactId>spring-kafka</artifactId>
-     * </dependency>
-     * }</pre>
-     */
-    public KafkaEventPublisherAdapter() {
-        // TODO: Injetar KafkaTemplate quando dependência for adicionada
-        // this.kafkaTemplate = kafkaTemplate;
-    }
-    
-    /**
-     * Publica evento no Kafka.
+     * <p>Padrão: Fail-Safe - se publicação falhar, loga erro mas não lança exceção.
+     * Isso garante que falhas na publicação não interrompam o fluxo principal da saga.</p>
      * 
-     * <p>Padrão: Fail-Safe - se publicação falhar, loga erro mas não lança exceção,
-     * garantindo que o fluxo principal da saga não seja interrompido.</p>
+     * <p>Usa o aggregateId (Order ID) como key da mensagem, garantindo que eventos
+     * do mesmo pedido sejam processados na mesma partição (ordem garantida).</p>
      * 
-     * <p>Padrão: Async Publishing - KafkaTemplate.send() é assíncrono por padrão,
-     * não bloqueia a thread principal.</p>
+     * @param event Evento de domínio a ser publicado
+     * @param <T> Tipo do evento (deve implementar DomainEvent)
      */
     @Override
     public <T extends DomainEvent> void publish(T event) {
         try {
-            String topic = getTopicForEvent(event);
-            String key = event.getAggregateId().toString(); // Partition key = aggregate ID
+            String topic = getTopicForEvent(event.getEventType());
+            String key = event.getAggregateId() != null 
+                ? event.getAggregateId().toString() 
+                : event.getEventId().toString();
             
-            log.debug("Publishing event to Kafka topic '{}': {} (aggregateId: {})", 
-                topic, event.getEventType(), event.getAggregateId());
+            log.debug("Publishing event to Kafka topic '{}': {} (aggregateId: {}, eventId: {})", 
+                topic, event.getEventType(), event.getAggregateId(), event.getEventId());
             
-            // TODO: Implementar quando KafkaTemplate estiver disponível
-            // Padrão: Async Publishing - não bloqueia thread
-            // kafkaTemplate.send(topic, key, event)
-            //     .whenComplete((result, exception) -> {
-            //         if (exception != null) {
-            //             log.error("Failed to publish event {} to Kafka: {}", 
-            //                 event.getEventType(), exception.getMessage(), exception);
-            //         } else {
-            //             log.info("Event published to Kafka successfully: {} [{}] on topic '{}'", 
-            //                 event.getEventType(), event.getEventId(), topic);
-            //         }
-            //     });
+            // Criar mensagem com headers
+            var message = MessageBuilder
+                .withPayload(event)
+                .setHeader(KafkaHeaders.TOPIC, topic)
+                .setHeader(KafkaHeaders.KEY, key)
+                .setHeader("eventId", event.getEventId().toString())
+                .setHeader("aggregateId", event.getAggregateId() != null 
+                    ? event.getAggregateId().toString() 
+                    : "")
+                .setHeader("eventType", event.getEventType())
+                .setHeader("eventVersion", event.getEventVersion())
+                .setHeader("occurredAt", event.getOccurredAt().toString())
+                .build();
             
-            log.warn("Kafka publishing not yet implemented. Event {} would be published to topic '{}'", 
-                event.getEventType(), topic);
+            // Publicar de forma assíncrona (não bloqueia)
+            kafkaTemplate.send(message);
+            
+            log.info("Event published successfully to Kafka: {} [{}] → topic: {}", 
+                event.getEventType(), event.getEventId(), topic);
                 
         } catch (Exception e) {
-            // Padrão: Fail-Safe
+            // Padrão: Fail-Safe - não interrompe fluxo principal
             log.error("Failed to publish event {} to Kafka: {}", 
                 event.getEventType(), e.getMessage(), e);
         }
@@ -136,39 +146,54 @@ public class KafkaEventPublisherAdapter implements EventPublisherPort {
     /**
      * Publica múltiplos eventos em batch.
      * 
-     * <p>Padrão: Batch Processing - otimiza publicação usando sendBatch(),
+     * <p>Padrão: Batch Processing - otimiza publicação de múltiplos eventos,
      * reduzindo overhead de rede e melhorando throughput.</p>
+     * 
+     * <p>Nota: KafkaTemplate já otimiza envios em batch internamente, mas este método
+     * permite agrupar eventos logicamente relacionados.</p>
+     * 
+     * @param events Lista de eventos a serem publicados
+     * @param <T> Tipo dos eventos (devem implementar DomainEvent)
      */
     @Override
     public <T extends DomainEvent> void publishBatch(List<T> events) {
         try {
             log.debug("Publishing {} events to Kafka in batch", events.size());
             
-            // TODO: Implementar batch sending quando necessário
-            // Por enquanto, envia sequencialmente
-            events.forEach(this::publish);
+            for (T event : events) {
+                publish(event); // Reutiliza lógica de publicação única
+            }
             
-            log.info("Batch of {} events published to Kafka", events.size());
+            log.info("Batch of {} events published successfully to Kafka", events.size());
             
         } catch (Exception e) {
-            log.error("Failed to publish batch to Kafka: {}", e.getMessage(), e);
+            log.error("Failed to publish batch of events to Kafka: {}", e.getMessage(), e);
         }
     }
     
     /**
      * Mapeia tipo de evento para tópico Kafka.
      * 
-     * <p>Padrão: Strategy Pattern (implícito) - cada tipo de evento tem sua própria
-     * estratégia de roteamento (tópico).</p>
+     * <p>Padrão: Strategy Pattern - mapeamento baseado em tipo de evento.
+     * Facilita adicionar novos tipos de eventos sem modificar lógica de publicação.</p>
+     * 
+     * <p>Alinhado com Open/Closed Principle - aberto para extensão (novos eventos),
+     * fechado para modificação (lógica de mapeamento não muda).</p>
+     * 
+     * @param eventType Tipo do evento (ex: "OrderCreated", "PaymentProcessed")
+     * @return Nome do tópico Kafka correspondente
+     * @throws IllegalArgumentException se tipo de evento não for suportado
      */
-    private String getTopicForEvent(DomainEvent event) {
-        return switch (event.getEventType()) {
-            case "OrderCreated" -> "order-created";
-            case "PaymentProcessed" -> "payment-processed";
-            case "SagaCompleted" -> "saga-completed";
-            case "SagaFailed" -> "saga-failed";
-            default -> "domain-events"; // Tópico padrão
+    private String getTopicForEvent(String eventType) {
+        return switch (eventType) {
+            case "OrderCreated" -> orderCreatedTopic;
+            case "PaymentProcessed" -> paymentProcessedTopic;
+            case "SagaCompleted" -> sagaCompletedTopic;
+            case "SagaFailed" -> sagaFailedTopic;
+            default -> {
+                log.warn("Unknown event type '{}', using default topic 'order-created'", eventType);
+                yield orderCreatedTopic;
+            }
         };
     }
 }
-

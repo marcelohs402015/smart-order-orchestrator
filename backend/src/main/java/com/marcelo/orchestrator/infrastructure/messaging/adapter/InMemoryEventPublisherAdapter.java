@@ -39,9 +39,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *   <li><strong>Sem Garantias:</strong> Não garante at-least-once delivery</li>
  * </ul>
  * 
- * <h3>Uso:</h3>
- * <p>Ativado quando {@code app.message.broker.type=IN_MEMORY}</p>
- * 
  * <h3>Para Testes:</h3>
  * <pre>{@code
  * // Em testes, pode verificar eventos publicados:
@@ -55,7 +52,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "app.message.broker.type", havingValue = "IN_MEMORY", matchIfMissing = true)
 public class InMemoryEventPublisherAdapter implements EventPublisherPort {
     
     /**
