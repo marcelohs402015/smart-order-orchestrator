@@ -1,8 +1,6 @@
 package com.marcelo.orchestrator.infrastructure.payment.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 
@@ -21,25 +19,27 @@ import java.time.LocalDateTime;
  * <p>Este DTO é convertido para {@code PaymentResult} do domínio
  * pelo adapter, isolando detalhes da API externa.</p>
  * 
+ * <h3>Por que Record?</h3>
+ * <ul>
+ *   <li><strong>Imutabilidade:</strong> Dados não podem ser alterados após criação</li>
+ *   <li><strong>Simplicidade:</strong> Menos código, mais legível (Java 17+)</li>
+ *   <li><strong>Performance:</strong> Menos overhead que classes tradicionais</li>
+ *   <li><strong>Consistência:</strong> Alinhado com padrão de DTOs do projeto (Records)</li>
+ * </ul>
+ * 
+ * @param data Dados da cobrança (preenchido em caso de sucesso)
+ * @param error Mensagem de erro (null em caso de sucesso)
+ * 
  * @author Marcelo
  * @see <a href="https://docs.abacatepay.com">AbacatePay Documentation</a>
  */
-@Getter
-@Setter
-public class AbacatePayBillingResponse {
-    
-    /**
-     * Dados da cobrança (preenchido em caso de sucesso).
-     */
+public record AbacatePayBillingResponse(
     @JsonProperty("data")
-    private AbacatePayBillingData data;
+    AbacatePayBillingData data,
     
-    /**
-     * Mensagem de erro (null em caso de sucesso).
-     */
     @JsonProperty("error")
-    private String error;
-    
+    String error
+) {
     /**
      * Verifica se a resposta indica sucesso.
      * 
@@ -51,113 +51,86 @@ public class AbacatePayBillingResponse {
     
     /**
      * Dados internos da cobrança.
+     * 
+     * <p>Record aninhado para representar a estrutura de dados
+     * retornada pela API do AbacatePay.</p>
+     * 
+     * @param id ID único da cobrança no AbacatePay (ex: "bill_12345667")
+     * @param url URL para pagamento
+     * @param amount Valor da cobrança em centavos
+     * @param status Status da cobrança ("PENDING", "PAID", "FAILED", "CANCELLED")
+     * @param devMode Indica se está em modo de desenvolvimento
+     * @param methods Métodos de pagamento disponíveis
+     * @param frequency Frequência da cobrança
+     * @param customer Dados do cliente associado
+     * @param createdAt Data de criação
+     * @param updatedAt Data de atualização
      */
-    @Getter
-    @Setter
-    public static class AbacatePayBillingData {
-        
-        /**
-         * ID único da cobrança no AbacatePay.
-         * Exemplo: "bill_12345667"
-         */
+    public record AbacatePayBillingData(
         @JsonProperty("id")
-        private String id;
+        String id,
         
-        /**
-         * URL para pagamento.
-         * Cliente acessa esta URL para realizar pagamento.
-         */
         @JsonProperty("url")
-        private String url;
+        String url,
         
-        /**
-         * Valor da cobrança em centavos.
-         */
         @JsonProperty("amount")
-        private Integer amount;
+        Integer amount,
         
-        /**
-         * Status da cobrança.
-         * Valores possíveis: "PENDING", "PAID", "FAILED", "CANCELLED"
-         */
         @JsonProperty("status")
-        private String status;
+        String status,
         
-        /**
-         * Indica se está em modo de desenvolvimento.
-         */
         @JsonProperty("devMode")
-        private Boolean devMode;
+        Boolean devMode,
         
-        /**
-         * Métodos de pagamento disponíveis.
-         */
         @JsonProperty("methods")
-        private String[] methods;
+        String[] methods,
         
-        /**
-         * Frequência da cobrança.
-         */
         @JsonProperty("frequency")
-        private String frequency;
+        String frequency,
         
-        /**
-         * Dados do cliente associado.
-         */
         @JsonProperty("customer")
-        private AbacatePayCustomerData customer;
+        AbacatePayCustomerData customer,
         
-        /**
-         * Data de criação.
-         */
         @JsonProperty("createdAt")
-        private LocalDateTime createdAt;
+        LocalDateTime createdAt,
         
-        /**
-         * Data de atualização.
-         */
         @JsonProperty("updatedAt")
-        private LocalDateTime updatedAt;
-    }
+        LocalDateTime updatedAt
+    ) {}
     
     /**
      * Dados do cliente na resposta.
+     * 
+     * @param id ID do cliente no AbacatePay
+     * @param metadata Metadados do cliente
      */
-    @Getter
-    @Setter
-    public static class AbacatePayCustomerData {
-        
-        /**
-         * ID do cliente no AbacatePay.
-         */
+    public record AbacatePayCustomerData(
         @JsonProperty("id")
-        private String id;
+        String id,
         
-        /**
-         * Metadados do cliente.
-         */
         @JsonProperty("metadata")
-        private AbacatePayCustomerMetadata metadata;
-    }
+        AbacatePayCustomerMetadata metadata
+    ) {}
     
     /**
      * Metadados do cliente.
+     * 
+     * @param name Nome do cliente
+     * @param cellphone Celular do cliente
+     * @param email Email do cliente
+     * @param taxId CPF ou CNPJ do cliente
      */
-    @Getter
-    @Setter
-    public static class AbacatePayCustomerMetadata {
-        
+    public record AbacatePayCustomerMetadata(
         @JsonProperty("name")
-        private String name;
+        String name,
         
         @JsonProperty("cellphone")
-        private String cellphone;
+        String cellphone,
         
         @JsonProperty("email")
-        private String email;
+        String email,
         
         @JsonProperty("taxId")
-        private String taxId;
-    }
+        String taxId
+    ) {}
 }
-

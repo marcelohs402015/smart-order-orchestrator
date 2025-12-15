@@ -83,6 +83,16 @@ public interface JpaOrderRepository extends JpaRepository<OrderEntity, UUID> {
     Optional<OrderEntity> findById(UUID orderId);
     
     /**
+     * Busca pedido pelo ID do pagamento (paymentId) com itens carregados (eager loading).
+     * Resolve problema de LazyInitializationException ao acessar items fora da sessão.
+     * 
+     * @param paymentId ID do pagamento no gateway externo (ex: "bill_xxxxx")
+     * @return Optional contendo OrderEntity com itens carregados
+     */
+    @Query("SELECT o FROM OrderEntity o LEFT JOIN FETCH o.items WHERE o.paymentId = :paymentId")
+    Optional<OrderEntity> findByPaymentId(@Param("paymentId") String paymentId);
+    
+    /**
      * Query customizada para buscar todos os pedidos com itens (eager loading).
      * Resolve problema de LazyInitializationException ao acessar items fora da sessão.
      * 

@@ -28,21 +28,6 @@ import java.math.BigDecimal;
 public class AbacatePayBillingRequest {
     
     /**
-     * Valor da cobrança em centavos.
-     * AbacatePay trabalha com valores inteiros (centavos).
-     * Exemplo: R$ 10,50 = 1050 centavos
-     */
-    @JsonProperty("amount")
-    private Integer amount; // Em centavos
-    
-    /**
-     * Descrição da cobrança.
-     * Aparece para o cliente no momento do pagamento.
-     */
-    @JsonProperty("description")
-    private String description;
-    
-    /**
      * Métodos de pagamento aceitos.
      * Exemplo: ["PIX", "CARD"]
      */
@@ -55,6 +40,24 @@ public class AbacatePayBillingRequest {
      */
     @JsonProperty("frequency")
     private String frequency;
+    
+    /**
+     * Lista de produtos que o cliente está pagando.
+     */
+    @JsonProperty("products")
+    private AbacatePayProductRequest[] products;
+    
+    /**
+     * URL para redirecionar o cliente caso ele clique em "Voltar".
+     */
+    @JsonProperty("returnUrl")
+    private String returnUrl;
+    
+    /**
+     * URL para redirecionar o cliente quando o pagamento for concluído.
+     */
+    @JsonProperty("completionUrl")
+    private String completionUrl;
     
     /**
      * Dados do cliente (opcional - pode ser criado no momento da cobrança).

@@ -47,8 +47,15 @@ public class PaymentProcessedEvent implements DomainEvent {
     private final java.math.BigDecimal amount;
     private final String currency;
     private final String failureReason; // null se sucesso
-    private final UUID sagaId;
+    private final UUID sagaId; // Pode ser null quando evento é publicado fora da saga
     
+    /**
+     * Cria evento a partir de um pedido e saga ID.
+     * 
+     * @param order Pedido
+     * @param sagaId ID da saga (pode ser null se evento é publicado fora da saga)
+     * @return PaymentProcessedEvent
+     */
     public static PaymentProcessedEvent from(Order order, UUID sagaId) {
         return PaymentProcessedEvent.builder()
             .eventId(UUID.randomUUID())
@@ -63,6 +70,19 @@ public class PaymentProcessedEvent implements DomainEvent {
                 ? "Payment rejected by gateway" : null)
             .sagaId(sagaId)
             .build();
+    }
+    
+    /**
+     * Cria evento a partir de um pedido sem saga ID.
+     * 
+     * <p>Útil quando o evento é publicado fora do contexto da saga,
+     * por exemplo, quando o status é atualizado via refresh de status.</p>
+     * 
+     * @param order Pedido
+     * @return PaymentProcessedEvent com sagaId = null
+     */
+    public static PaymentProcessedEvent fromOrder(Order order) {
+        return from(order, null);
     }
     
     @Override

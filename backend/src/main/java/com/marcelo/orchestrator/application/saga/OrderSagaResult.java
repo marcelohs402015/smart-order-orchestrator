@@ -56,19 +56,26 @@ public class OrderSagaResult {
     }
     
     /**
-     * Cria resultado indicando que saga está em progresso (idempotência).
-     * 
-     * <p>Usado quando uma saga com a mesma idempotency_key já está sendo executada.
-     * Permite que o cliente saiba que a requisição foi recebida e está sendo processada.</p>
+     * Cria resultado indicando que saga está em progresso (idempotência ou estado intermediário).
+     *
+     * <p>Usado quando uma saga com a mesma idempotency_key já está sendo executada
+     * ou quando o fluxo está em um estado intermediário (por exemplo, pagamento pendente).</p>
      */
-    public static OrderSagaResult inProgress(UUID sagaExecutionId) {
+    public static OrderSagaResult inProgress(UUID sagaExecutionId, Order order) {
         return OrderSagaResult.builder()
             .success(false)
             .inProgress(true)
-            .order(null)
+            .order(order)
             .sagaExecutionId(sagaExecutionId)
             .errorMessage("Saga is already in progress")
             .build();
+    }
+    
+    /**
+     * Sobrecarga para manter compatibilidade com chamadas antigas que não passam Order.
+     */
+    public static OrderSagaResult inProgress(UUID sagaExecutionId) {
+        return inProgress(sagaExecutionId, null);
     }
 }
 

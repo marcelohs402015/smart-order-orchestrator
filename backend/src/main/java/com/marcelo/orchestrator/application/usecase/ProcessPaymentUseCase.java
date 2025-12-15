@@ -7,6 +7,7 @@ import com.marcelo.orchestrator.application.exception.OrderNotFoundException;
 import com.marcelo.orchestrator.domain.port.PaymentGatewayPort;
 import com.marcelo.orchestrator.domain.port.PaymentRequest;
 import com.marcelo.orchestrator.domain.port.PaymentResult;
+import com.marcelo.orchestrator.domain.port.PaymentStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -96,13 +97,24 @@ public class ProcessPaymentUseCase {
         
         // Atualizar pedido baseado no resultado
         if (paymentResult.isSuccessful()) {
+            // Pagamento confirmado na primeira chamada
             order.markAsPaid(paymentResult.paymentId());
             log.info("Payment successful for order: {} - Payment ID: {}",
                 order.getId(), paymentResult.paymentId());
         } else {
-            order.markAsPaymentFailed();
-            log.warn("Payment failed for order: {} - Reason: {}",
-                order.getId(), paymentResult.message());
+            // Se o gateway sinalizar pagamento pendente, mantemos pedido em estado intermediário
+            // e não marcamos como falha definitiva. Ainda assim, anexamos o paymentId para
+            // permitir consultas futuras de status.
+            if (paymentResult.status() == PaymentStatus.PENDING && paymentResult.paymentId() != null) {
+                order.attachPaymentId(paymentResult.paymentId());
+                order.updateStatus(com.marcelo.orchestrator.domain.model.OrderStatus.PAYMENT_PENDING);
+                log.info("Payment pending for order: {} - Payment ID: {}",
+                    order.getId(), paymentResult.paymentId());
+            } else {
+                order.markAsPaymentFailed();
+                log.warn("Payment failed for order: {} - Reason: {}",
+                    order.getId(), paymentResult.message());
+            }
         }
         
         // Persistir mudança

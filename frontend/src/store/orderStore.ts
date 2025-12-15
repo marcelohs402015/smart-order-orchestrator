@@ -41,6 +41,7 @@ interface OrderState {
   fetchOrders: (status?: OrderStatus) => Promise<void>;
   fetchOrderById: (id: string) => Promise<void>;
   createOrder: (request: CreateOrderRequest) => Promise<CreateOrderResponse>;
+  refreshPaymentStatus: (orderId: string) => Promise<void>;
   clearError: () => void;
   clearValidationErrors: () => void;
   clearCurrentOrder: () => void;
@@ -138,6 +139,41 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         loading: 'error',
         error: apiError,
         validationErrors,
+      });
+      throw error;
+    }
+  },
+
+  // Atualizar status do pagamento
+  refreshPaymentStatus: async (orderId: string) => {
+    // Não alterar loading global para não interferir com a UI
+    // Apenas limpar erros anteriores
+    set({ error: null, validationErrors: null });
+    try {
+      const updatedOrder = await orderService.refreshPaymentStatus(orderId);
+      
+      // Atualizar currentOrder se for o pedido atual
+      const currentOrder = get().currentOrder;
+      if (currentOrder && currentOrder.id === orderId) {
+        set({ currentOrder: updatedOrder });
+      }
+      
+      // Atualizar na lista de pedidos também
+      const currentOrders = get().orders;
+      const updatedOrders = currentOrders.map((order) =>
+        order.id === orderId ? updatedOrder : order
+      );
+      
+      set({
+        orders: updatedOrders,
+        error: null,
+        validationErrors: null,
+      });
+    } catch (error) {
+      const apiError = error as ApiError;
+      set({
+        error: apiError,
+        validationErrors: apiError.details || null,
       });
       throw error;
     }

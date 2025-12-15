@@ -163,9 +163,14 @@ resilience4j:
 
 ### Status da Cobrança
 
-- **Endpoint**: `GET /v1/billing/get/{id}` (📋 Melhoria Futura)
+- **Endpoint**: `GET /v1/billing/list` (filtrado por `paymentId`)
 - **Autenticação**: Bearer token
-- **Status**: Marcado como TODO, será implementado no futuro
+- **Status**: ✅ **IMPLEMENTADO**
+
+**Implementação:**
+- A API do AbacatePay não oferece endpoint direto para buscar status por ID
+- Nossa implementação usa `GET /v1/billing/list` e filtra o resultado pelo `paymentId`
+- O endpoint `GET /api/v1/payments/{paymentId}/status` atualiza automaticamente o banco de dados se o status mudar
 
 ---
 

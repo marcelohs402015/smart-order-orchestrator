@@ -105,7 +105,8 @@ spring:
 abacatepay:
   api:
     base-url: ${ABACATEPAY_BASE_URL:https://api.abacatepay.com/v1}
-    key: ${ABACATEPAY_API_KEY:}
+    # API Key: Use variável de ambiente ABACATEPAY_API_KEY ou valor padrão abaixo (apenas para testes locais)
+    key: ${ABACATEPAY_API_KEY:abc_dev_YrzNYkYCYj0QkkF6DmkJ5YYH}
 
 # ============================================================================
 # OpenAI Configuration

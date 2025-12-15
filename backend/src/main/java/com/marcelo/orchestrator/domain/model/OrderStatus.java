@@ -17,9 +17,9 @@ import java.util.Set;
  *   <li><strong>Testabilidade:</strong> Fácil testar transições válidas e inválidas.</li>
  * </ul>
  * 
- * <h3>Fluxo de Estados:</h3>
+ * <h3>Fluxo de Estados (simplificado):</h3>
  * <pre>
- * PENDING → PAID → (Análise de Risco)
+ * PENDING → PAYMENT_PENDING → PAID
  * PENDING → PAYMENT_FAILED → CANCELED (compensação via saga)
  * PENDING → CANCELED
  * </pre>
@@ -36,10 +36,16 @@ import java.util.Set;
 public enum OrderStatus {
     
     /**
-     * Pedido criado, aguardando processamento de pagamento.
-     * Pode transicionar para: PAID, PAYMENT_FAILED, CANCELED
+     * Pedido criado, aguardando tentativa de pagamento.
+     * Pode transicionar para: PAYMENT_PENDING, PAYMENT_FAILED, CANCELED
      */
     PENDING,
+    
+    /**
+     * Cobrança criada no gateway, aguardando confirmação de pagamento.
+     * Pode transicionar para: PAID, PAYMENT_FAILED
+     */
+    PAYMENT_PENDING,
     
     /**
      * Pagamento confirmado com sucesso.
@@ -73,7 +79,9 @@ public enum OrderStatus {
      */
     public Set<OrderStatus> getAllowedTransitions() {
         return switch (this) {
-            case PENDING -> Set.of(PAID, PAYMENT_FAILED, CANCELED);
+            // PENDING pode ir direto para PAID (pagamento síncrono) ou para PAYMENT_PENDING (pagamento assíncrono)
+            case PENDING -> Set.of(PAYMENT_PENDING, PAID, PAYMENT_FAILED, CANCELED);
+            case PAYMENT_PENDING -> Set.of(PAID, PAYMENT_FAILED);
             case PAYMENT_FAILED -> Set.of(CANCELED); // Permite compensação via saga
             case PAID, CANCELED -> Set.of(); // Estados finais
         };

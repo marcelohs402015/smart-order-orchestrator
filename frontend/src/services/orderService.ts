@@ -113,6 +113,28 @@ export const getAllOrders = async (status?: OrderStatus): Promise<OrderResponse[
 };
 
 /**
+ * Atualiza o status do pagamento de um pedido consultando o gateway externo.
+ * 
+ * <p>Este endpoint consulta o status atual do pagamento no gateway (AbacatePay)
+ * e atualiza o pedido no banco de dados se o status tiver mudado.</p>
+ * 
+ * @param orderId ID do pedido (UUID)
+ * @returns Promise com o pedido atualizado
+ * @throws ApiError se pedido não for encontrado (404) ou outro erro ocorrer
+ */
+export const refreshPaymentStatus = async (orderId: string): Promise<OrderResponse> => {
+  try {
+    const response = await apiClient.post<OrderResponse>(
+      `/payments/orders/${orderId}/refresh-status`
+    );
+    return response.data;
+  } catch (error) {
+    // Re-throw para que o store possa tratar adequadamente
+    throw error;
+  }
+};
+
+/**
  * Tipos de erro específicos do serviço.
  */
 export class OrderServiceError extends Error {

@@ -228,6 +228,31 @@ public class Order {
     }
     
     /**
+     * Anexa o ID de pagamento ao pedido sem alterar o status.
+     *
+     * <p>Útil para cenários onde a cobrança foi criada no gateway mas o
+     * pagamento ainda está pendente.</p>
+     *
+     * @param paymentId ID do pagamento no gateway externo
+     */
+    public void attachPaymentId(String paymentId) {
+        if (paymentId == null || paymentId.isBlank()) {
+            return;
+        }
+        this.paymentId = paymentId;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    /**
+     * Verifica se o pagamento está pendente (cobrança criada aguardando confirmação).
+     *
+     * @return {@code true} se status é PAYMENT_PENDING, {@code false} caso contrário
+     */
+    public boolean isPaymentPending() {
+        return status == OrderStatus.PAYMENT_PENDING;
+    }
+    
+    /**
      * Verifica se o pedido foi cancelado.
      * 
      * @return {@code true} se status é CANCELED, {@code false} caso contrário

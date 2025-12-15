@@ -1,5 +1,6 @@
 package com.marcelo.orchestrator.infrastructure.payment.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +36,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Marcelo
  * @see <a href="https://docs.abacatepay.com">AbacatePay Documentation</a>
  */
+@Slf4j
 @Configuration
 public class AbacatePayConfig {
     
@@ -57,6 +59,14 @@ public class AbacatePayConfig {
      */
     @Bean("abacatePayWebClient")
     public WebClient abacatePayWebClient() {
+        // Validar se API key está configurada
+        if (apiKey == null || apiKey.isBlank()) {
+            log.warn("⚠️ [AbacatePay] API Key não configurada! Verifique a variável de ambiente ABACATEPAY_API_KEY ou application.yml");
+        } else {
+            log.info("✅ [AbacatePay] WebClient configurado | Base URL: {} | API Key: {}***", 
+                baseUrl, apiKey.substring(0, Math.min(10, apiKey.length())));
+        }
+        
         return WebClient.builder()
             .baseUrl(baseUrl)
             .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)

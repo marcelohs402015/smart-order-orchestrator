@@ -192,6 +192,10 @@ public class OrderSagaOrchestrator {
                 publishSagaCompletedEvent(saga, analyzedOrder);
                 
                 return OrderSagaResult.success(analyzedOrder, saga.id());
+            } else if (paidOrder.getStatus() == OrderStatus.PAYMENT_PENDING) {
+                // Pagamento ainda pendente: não compensamos, retornamos estado intermediário
+                log.info("Saga finished with payment pending for order {}. SagaId={}", order.getId(), saga.id());
+                return OrderSagaResult.inProgress(saga.id(), paidOrder);
             } else {
                 // Compensação: cancelar pedido se pagamento falhou
                 saga = compensate(saga, paidOrder, "Payment failed");
@@ -251,7 +255,12 @@ public class OrderSagaOrchestrator {
         
         try {
             Order paidOrder = processPaymentUseCase.execute(command.toProcessPaymentCommand(order.getId()));
-            updatedSaga = completeStep(updatedSaga, "PAYMENT_PROCESSED", paidOrder.isPaid(), paidOrder.isPaid() ? null : "Payment failed");
+            
+            boolean paymentSucceeded = paidOrder.isPaid();
+            boolean paymentPending = paidOrder.getStatus() == OrderStatus.PAYMENT_PENDING;
+            
+            String errorMessage = paymentSucceeded || paymentPending ? null : "Payment failed";
+            updatedSaga = completeStep(updatedSaga, "PAYMENT_PROCESSED", paymentSucceeded || paymentPending, errorMessage);
             updatedSaga = updateSagaStatus(updatedSaga, SagaExecutionRepositoryPort.SagaExecution.SagaStatus.PAYMENT_PROCESSED);
             
             log.info("Step 2 completed: Payment processed - Status: {}", paidOrder.getStatus());

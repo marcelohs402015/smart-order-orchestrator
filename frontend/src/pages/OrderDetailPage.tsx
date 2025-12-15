@@ -9,7 +9,7 @@
  * </ul>
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useOrderStore } from '../store/orderStore';
 import { formatCurrency, formatDate, getOrderStatusInfo, getRiskLevelInfo } from '../utils';
@@ -17,11 +17,21 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Alert } from '../components/ui/Alert';
+import { ApiError } from '../types';
 
 export const OrderDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { currentOrder, loading, error, fetchOrderById, clearError } = useOrderStore();
+  const {
+    currentOrder,
+    loading,
+    error,
+    fetchOrderById,
+    refreshPaymentStatus,
+    clearError,
+  } = useOrderStore();
+  const [isRefreshingPayment, setIsRefreshingPayment] = useState(false);
+  const [refreshError, setRefreshError] = useState<typeof error>(null);
 
   useEffect(() => {
     if (id) {
@@ -29,7 +39,7 @@ export const OrderDetailPage = () => {
     }
   }, [id, fetchOrderById]);
 
-  if (loading === 'loading') {
+  if (loading === 'loading' && !currentOrder) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner size="lg" />
@@ -72,6 +82,25 @@ export const OrderDetailPage = () => {
   const statusInfo = getOrderStatusInfo(currentOrder.status);
   const riskInfo = getRiskLevelInfo(currentOrder.riskLevel);
 
+  const handleRefreshPaymentStatus = async () => {
+    if (!id) return;
+    
+    setIsRefreshingPayment(true);
+    setRefreshError(null);
+    clearError();
+    
+    try {
+      await refreshPaymentStatus(id);
+    } catch (error) {
+      // Capturar erro para exibir na UI
+      const apiError = error as ApiError;
+      setRefreshError(apiError);
+      console.error('Erro ao atualizar status do pagamento:', error);
+    } finally {
+      setIsRefreshingPayment(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
@@ -83,10 +112,41 @@ export const OrderDetailPage = () => {
             Detalhes completos do pedido
           </p>
         </div>
-        <Button variant="secondary" onClick={() => navigate('/orders')}>
-          ← Voltar
-        </Button>
+        <div className="flex gap-3">
+          {currentOrder.paymentId && (
+            <Button
+              variant="outline"
+              onClick={handleRefreshPaymentStatus}
+              disabled={isRefreshingPayment}
+            >
+              {isRefreshingPayment ? 'Atualizando...' : '🔄 Atualizar Status Pagamento'}
+            </Button>
+          )}
+          <Button variant="secondary" onClick={() => navigate('/orders')}>
+            ← Voltar
+          </Button>
+        </div>
       </div>
+
+      {refreshError && refreshError.status !== 404 && (
+        <Alert variant="error" onClose={() => setRefreshError(null)} className="mb-6">
+          <div>
+            <p className="font-semibold mb-1">Erro ao atualizar status</p>
+            <p>{refreshError.message || 'Erro desconhecido'}</p>
+            {refreshError.details && Object.keys(refreshError.details).length > 0 && (
+              <div className="mt-2 text-sm">
+                <ul className="list-disc list-inside space-y-1">
+                  {Object.entries(refreshError.details).map(([field, message]) => (
+                    <li key={field}>
+                      <strong>{field}:</strong> {String(message)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </Alert>
+      )}
 
       <div className="space-y-6">
         {/* Status e Risco */}

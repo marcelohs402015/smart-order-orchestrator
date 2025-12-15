@@ -133,13 +133,14 @@ frontend/
 
 O frontend consome APIs REST do backend Spring Boot:
 
-- **Base URL**: `http://localhost:8080/api/v1` (desenvolvimento)
+- **Base URL**: `http://localhost:8081/api/v1` (desenvolvimento - porta atualizada)
 - **Formato**: JSON
 - **Endpoints**:
   - `POST /api/v1/orders` - Criar pedido
   - `GET /api/v1/orders` - Listar pedidos
   - `GET /api/v1/orders/{id}` - Buscar pedido por ID
   - `GET /api/v1/orders/number/{orderNumber}` - Buscar pedido por número
+  - `POST /api/v1/payments/orders/{orderId}/refresh-status` - Atualizar status de pagamento (com botão na UI) 🔄
 
 ## 🎨 Componentes Disponíveis
 
@@ -160,6 +161,7 @@ O frontend consome APIs REST do backend Spring Boot:
 - **Lista de Pedidos** (`/orders`) - Lista todos os pedidos
 - **Criar Pedido** (`/orders/create`) - Formulário para criar pedido
 - **Detalhes do Pedido** (`/orders/:id`) - Detalhes completos de um pedido
+  - Botão "🔄 Atualizar Status Pagamento" (visível quando pedido tem `paymentId`)
 
 ## 🧪 Como Testar
 
@@ -180,8 +182,8 @@ npm run dev
 ### 3. Acessar
 
 - **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:8080/api/v1/orders
-- **Swagger UI**: http://localhost:8080/swagger-ui.html
+- **Backend API**: http://localhost:8081/api/v1/orders (porta atualizada)
+- **Swagger UI**: http://localhost:8081/swagger-ui/index.html
 
 ## 🚀 Build para Produção
 
@@ -232,3 +234,20 @@ npm run test:e2e
 5. Adicionar paginação
 6. Implementar notificações em tempo real
 7. Adicionar gráficos e métricas no dashboard
+
+## 🔄 Funcionalidades Recentes
+
+### Atualização de Status de Pagamento (Dez 2024)
+
+✅ **Implementado:** Botão na página de detalhes do pedido para atualizar manualmente o status do pagamento.
+
+**Como funciona:**
+- Botão aparece apenas quando o pedido tem `paymentId`
+- Consulta o gateway externo (AbacatePay) e atualiza o status no banco
+- Atualiza automaticamente a UI com o novo status
+- Tratamento de erros com mensagens informativas
+
+**Arquivos:**
+- `src/services/orderService.ts` - Método `refreshPaymentStatus()`
+- `src/store/orderStore.ts` - Action `refreshPaymentStatus()`
+- `src/pages/OrderDetailPage.tsx` - Botão e lógica de atualização

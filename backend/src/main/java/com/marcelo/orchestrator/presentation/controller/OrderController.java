@@ -115,12 +115,14 @@ public class OrderController {
         } else if (result.isInProgress()) {
             // Saga já está em progresso (idempotência)
             CreateOrderResponse response = CreateOrderResponse.inProgress(
+                result.getOrder() != null ? OrderResponse.from(result.getOrder()) : null,
                 result.getSagaExecutionId(),
                 "Order creation is already in progress"
             );
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
         } else {
             CreateOrderResponse response = CreateOrderResponse.failed(
+                result.getOrder() != null ? OrderResponse.from(result.getOrder()) : null,
                 result.getSagaExecutionId(),
                 result.getErrorMessage()
             );

@@ -104,6 +104,14 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
     }
     
     @Override
+    public Optional<Order> findByPaymentId(String paymentId) {
+        log.debug("Finding order by paymentId: {}", paymentId);
+        
+        return jpaOrderRepository.findByPaymentId(paymentId)
+            .map(orderMapper::toDomain);
+    }
+    
+    @Override
     public List<Order> findAll() {
         log.debug("Finding all orders");
         

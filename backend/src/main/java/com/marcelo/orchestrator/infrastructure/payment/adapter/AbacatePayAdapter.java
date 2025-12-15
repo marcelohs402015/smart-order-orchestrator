@@ -5,15 +5,18 @@ import com.marcelo.orchestrator.domain.port.PaymentRequest;
 import com.marcelo.orchestrator.domain.port.PaymentResult;
 import com.marcelo.orchestrator.domain.port.PaymentStatus;
 import com.marcelo.orchestrator.infrastructure.payment.dto.AbacatePayBillingRequest;
+import com.marcelo.orchestrator.infrastructure.payment.dto.AbacatePayCustomerRequest;
+import com.marcelo.orchestrator.infrastructure.payment.dto.AbacatePayProductRequest;
 import com.marcelo.orchestrator.infrastructure.payment.dto.AbacatePayBillingResponse;
+import com.marcelo.orchestrator.infrastructure.payment.dto.AbacatePayBillingListResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -59,6 +62,7 @@ public class AbacatePayAdapter implements PaymentGatewayPort {
     
     private final WebClient abacatePayWebClient;
     private final String baseUrl;
+    private final ObjectMapper objectMapper;
     
     /**
      * Construtor com injeção de dependências.
@@ -68,9 +72,11 @@ public class AbacatePayAdapter implements PaymentGatewayPort {
      */
     public AbacatePayAdapter(
             WebClient abacatePayWebClient,
-            @Value("${abacatepay.api.base-url:https://api.abacatepay.com/v1}") String baseUrl) {
+            @Value("${abacatepay.api.base-url:https://api.abacatepay.com/v1}") String baseUrl,
+            ObjectMapper objectMapper) {
         this.abacatePayWebClient = abacatePayWebClient;
         this.baseUrl = baseUrl;
+        this.objectMapper = objectMapper;
     }
     
     /**
@@ -88,11 +94,25 @@ public class AbacatePayAdapter implements PaymentGatewayPort {
     @CircuitBreaker(name = "paymentGateway", fallbackMethod = "processPaymentFallback")
     @Retry(name = "paymentGateway")
     public PaymentResult processPayment(PaymentRequest request) {
-        log.info("Processing payment via AbacatePay for order: {}", request.orderId());
+        log.info("Processing payment via AbacatePay for order: {} - amount: {} {}, method: {}",
+            request.orderId(), request.amount(), request.currency(), request.paymentMethod());
         
         try {
             // Converter PaymentRequest (domínio) para AbacatePayBillingRequest (API)
             AbacatePayBillingRequest billingRequest = buildBillingRequest(request);
+            
+            // Log do JSON que será enviado para o AbacatePay em um bloco bem visível
+            try {
+                String requestJson = objectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(billingRequest);
+                log.info("--------------------------- ABACATEPAY INICIO JSON -------------------------------------------");
+                log.info("OrderId={}", request.orderId());
+                log.info("{}", requestJson);
+                log.info("--------------------------- ABACATEPAY JSON FIM -------------------------------------------");
+            } catch (Exception e) {
+                log.warn("[AbacatePay] Failed to serialize request JSON for order {}: {}", 
+                    request.orderId(), e.getMessage());
+            }
             
             // Chamar API do AbacatePay
             AbacatePayBillingResponse response = abacatePayWebClient
@@ -104,17 +124,24 @@ public class AbacatePayAdapter implements PaymentGatewayPort {
                 .block(); // Bloqueia para retorno síncrono (pode usar reativo no futuro)
             
             // Converter resposta para PaymentResult (domínio)
-            return mapToPaymentResult(response, request.amount());
+            PaymentResult result = mapToPaymentResult(response, request.amount(), request.orderId());
+            log.info("[AbacatePay] Billing created | orderId={} | paymentId={} | status={} | amount={} | devMode={}",
+                request.orderId(),
+                result.paymentId(),
+                result.status(),
+                result.amount(),
+                response != null && response.data() != null ? response.data().devMode() : null);
+            return result;
             
         } catch (WebClientResponseException e) {
-            log.error("AbacatePay API error for order {}: {} - {}", 
+            log.error("[AbacatePay] API error for order {}: status={} body={}",
                 request.orderId(), e.getStatusCode(), e.getResponseBodyAsString());
             return createFailedResult(
                 request.amount(),
                 String.format("AbacatePay API error: %s", e.getStatusCode())
             );
         } catch (Exception e) {
-            log.error("Unexpected error processing payment for order {}: {}", 
+            log.error("[AbacatePay] Unexpected error processing payment for order {}: {}", 
                 request.orderId(), e.getMessage(), e);
             return createFailedResult(request.amount(), "Unexpected error: " + e.getMessage());
         }
@@ -161,12 +188,46 @@ public class AbacatePayAdapter implements PaymentGatewayPort {
         log.info("Checking payment status via AbacatePay: {}", paymentId);
         
         try {
-            // TODO: Implementar quando endpoint de status estiver disponível
-            // Por enquanto, retorna PENDING
-            log.warn("Check payment status not yet implemented. Payment ID: {}", paymentId);
-            return PaymentStatus.PENDING;
+            // AbacatePay não tem endpoint direto para buscar billing por ID
+            // Precisamos listar todas as cobranças e filtrar pelo paymentId
+            AbacatePayBillingListResponse listResponse = abacatePayWebClient
+                .get()
+                .uri("/billing/list")
+                .retrieve()
+                .bodyToMono(AbacatePayBillingListResponse.class)
+                .block();
+            
+            if (listResponse == null || !listResponse.isSuccess() || listResponse.data() == null) {
+                log.warn("Empty or error response when listing billings. Payment ID: {}", paymentId);
+                return PaymentStatus.PENDING;
+            }
+            
+            log.info("Listed {} billings from AbacatePay. Searching for paymentId: {}", 
+                listResponse.data().size(), paymentId);
+            
+            // Filtrar a lista para encontrar a cobrança com o paymentId desejado
+            AbacatePayBillingResponse.AbacatePayBillingData billing = listResponse.data().stream()
+                .filter(b -> paymentId.equals(b.id()))
+                .findFirst()
+                .orElse(null);
+            
+            if (billing == null) {
+                log.warn("Billing not found in list. Payment ID: {}", paymentId);
+                return PaymentStatus.PENDING;
+            }
+            
+            String status = billing.status();
+            PaymentStatus mappedStatus = mapAbacatePayStatus(status);
+            log.info("Payment status from AbacatePay. Payment ID: {}, status: {}, mappedStatus: {}",
+                paymentId, status, mappedStatus);
+            return mappedStatus;
+        } catch (WebClientResponseException e) {
+            log.error("[AbacatePay] API error checking payment status | paymentId={} | httpStatus={} | body={} | URL={}",
+                paymentId, e.getStatusCode(), e.getResponseBodyAsString(), 
+                e.getRequest() != null ? e.getRequest().getURI() : "unknown");
+            return PaymentStatus.PENDING; // Retorna PENDING em caso de erro
         } catch (Exception e) {
-            log.error("Error checking payment status: {}", e.getMessage());
+            log.error("Error checking payment status for paymentId={}: {}", paymentId, e.getMessage(), e);
             return PaymentStatus.PENDING; // Retorna PENDING em caso de erro
         }
     }
@@ -185,12 +246,32 @@ public class AbacatePayAdapter implements PaymentGatewayPort {
      * <p>Mapeia dados do domínio para formato esperado pela API do AbacatePay.</p>
      */
     private AbacatePayBillingRequest buildBillingRequest(PaymentRequest request) {
+        // Mapear produtos de forma genérica, já que PaymentRequest não possui itens.
+        AbacatePayProductRequest product = AbacatePayProductRequest.builder()
+            .externalId(request.orderId().toString())
+            .name(String.format("Order %s", request.orderId()))
+            .description("Smart Order Orchestrator billing")
+            .quantity(1)
+            .price(AbacatePayBillingRequest.toCents(request.amount()))
+            .build();
+        
+        // Cliente mockado a partir do e-mail disponível
+        AbacatePayCustomerRequest customer = AbacatePayCustomerRequest.builder()
+            .name("Smart Order Customer")
+            .cellphone("(11) 4002-8922")
+            .email(request.customerEmail())
+            // Tax ID mocked with a valid CPF used only for sandbox/testing.
+            .taxId("810.373.590-62")
+            .build();
+        
         return AbacatePayBillingRequest.builder()
-            .amount(AbacatePayBillingRequest.toCents(request.amount()))
-            .description(String.format("Pedido %s", request.orderId()))
-            .methods(new String[]{"PIX", "CARD"}) // Métodos disponíveis
-            .frequency("ONE_TIME") // Pagamento único
-            // Cliente pode ser criado no momento da cobrança ou antes
+            // Método de pagamento: PIX (único método suportado pela API do AbacatePay)
+            .methods(new String[]{"PIX"})
+            .frequency("ONE_TIME")
+            .products(new AbacatePayProductRequest[]{product})
+            .returnUrl("https://example.com/billing")
+            .completionUrl("https://example.com/completion")
+            .customer(customer)
             .build();
     }
     
@@ -199,35 +280,38 @@ public class AbacatePayAdapter implements PaymentGatewayPort {
      * 
      * <p>Identifica ambiente de teste através do campo {@code devMode} retornado pela API.</p>
      */
-    private PaymentResult mapToPaymentResult(AbacatePayBillingResponse response, BigDecimal originalAmount) {
-        if (response == null || !response.isSuccess() || response.getData() == null) {
+    private PaymentResult mapToPaymentResult(AbacatePayBillingResponse response, BigDecimal originalAmount, java.util.UUID orderId) {
+        if (response == null || !response.isSuccess() || response.data() == null) {
+            String errorMessage = response != null && response.error() != null
+                ? response.error()
+                : "Unknown error from AbacatePay";
+            log.warn("[AbacatePay] Billing failed or empty response | orderId={} | error={}",
+                orderId, errorMessage);
             return createFailedResult(
                 originalAmount,
-                response != null && response.getError() != null 
-                    ? response.getError() 
-                    : "Unknown error from AbacatePay"
+                errorMessage
             );
         }
         
-        AbacatePayBillingResponse.AbacatePayBillingData data = response.getData();
+        AbacatePayBillingResponse.AbacatePayBillingData data = response.data();
         
         // Identificar ambiente de teste através do devMode
-        if (Boolean.TRUE.equals(data.getDevMode())) {
-            log.info("🧪 [DEV MODE] Payment processed in TEST environment. Payment ID: {}", 
-                data.getId());
+        if (Boolean.TRUE.equals(data.devMode())) {
+            log.info("🧪 [AbacatePay][DEV MODE] Billing in TEST environment. Payment ID: {} - status: {}", 
+                data.id(), data.status());
         } else {
-            log.info("✅ [PRODUCTION] Payment processed in PRODUCTION environment. Payment ID: {}", 
-                data.getId());
+            log.info("✅ [AbacatePay][PRODUCTION] Billing in PRODUCTION environment. Payment ID: {} - status: {}", 
+                data.id(), data.status());
         }
         
         // Mapear status do AbacatePay para PaymentStatus do domínio
-        PaymentStatus status = mapAbacatePayStatus(data.getStatus());
+        PaymentStatus status = mapAbacatePayStatus(data.status());
         
         return new PaymentResult(
-            data.getId(), // ID da cobrança no AbacatePay
+            data.id(), // ID da cobrança no AbacatePay
             status,
             status == PaymentStatus.SUCCESS ? "Payment processed successfully" : "Payment pending",
-            BigDecimal.valueOf(data.getAmount()).divide(BigDecimal.valueOf(100)), // Converter centavos para reais
+            BigDecimal.valueOf(data.amount()).divide(BigDecimal.valueOf(100)), // Converter centavos para reais
             LocalDateTime.now()
         );
     }

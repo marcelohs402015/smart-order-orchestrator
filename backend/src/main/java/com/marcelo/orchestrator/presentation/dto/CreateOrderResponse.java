@@ -20,8 +20,8 @@ import java.util.UUID;
  *   <li><strong>Performance:</strong> Menos overhead que classes tradicionais</li>
  * </ul>
  * 
- * @param success Indica se a saga foi executada com sucesso
- * @param order Pedido criado (null se falhou ou está em progresso)
+     * @param success Indica se a saga foi executada com sucesso
+     * @param order Pedido criado ou parcialmente processado (pode ser null em alguns cenários)
  * @param sagaExecutionId ID da execução da saga (para rastreamento)
  * @param errorMessage Mensagem de erro (null se sucesso)
  * 
@@ -54,25 +54,27 @@ public record CreateOrderResponse(
     /**
      * Cria response de falha.
      * 
+     * @param order Pedido associado à saga (pode ser null se falhou antes da criação)
      * @param sagaExecutionId ID da execução da saga
      * @param errorMessage Mensagem de erro
      * @return CreateOrderResponse com success=false
      */
-    public static CreateOrderResponse failed(UUID sagaExecutionId, String errorMessage) {
-        return new CreateOrderResponse(false, null, sagaExecutionId, errorMessage);
+    public static CreateOrderResponse failed(OrderResponse order, UUID sagaExecutionId, String errorMessage) {
+        return new CreateOrderResponse(false, order, sagaExecutionId, errorMessage);
     }
     
     /**
-     * Cria response indicando que saga está em progresso (idempotência).
+     * Cria response indicando que saga está em progresso (idempotência ou estado intermediário).
      * 
      * <p>Padrão: Idempotência - usado quando uma saga com a mesma
      * idempotency_key já está sendo executada.</p>
      * 
+     * @param order Pedido associado (pode ser null quando já existe saga em andamento)
      * @param sagaExecutionId ID da execução da saga em progresso
      * @param message Mensagem informativa
      * @return CreateOrderResponse com success=false e mensagem
      */
-    public static CreateOrderResponse inProgress(UUID sagaExecutionId, String message) {
-        return new CreateOrderResponse(false, null, sagaExecutionId, message);
+    public static CreateOrderResponse inProgress(OrderResponse order, UUID sagaExecutionId, String message) {
+        return new CreateOrderResponse(false, order, sagaExecutionId, message);
     }
 }

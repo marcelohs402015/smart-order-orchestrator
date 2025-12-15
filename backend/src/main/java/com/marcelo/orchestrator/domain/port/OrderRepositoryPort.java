@@ -61,6 +61,14 @@ public interface OrderRepositoryPort {
     Optional<Order> findByOrderNumber(String orderNumber);
     
     /**
+     * Busca um pedido pelo ID do pagamento (paymentId do gateway externo).
+     * 
+     * @param paymentId ID do pagamento no gateway externo (ex: "bill_xxxxx")
+     * @return Optional contendo o pedido se encontrado, vazio caso contrário
+     */
+    Optional<Order> findByPaymentId(String paymentId);
+    
+    /**
      * Busca todos os pedidos.
      * 
      * @return Lista de todos os pedidos (pode ser vazia)

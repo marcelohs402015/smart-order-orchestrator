@@ -35,7 +35,7 @@ Este documento complementar contém:
 
 ## 🎯 Padrões de Projeto Utilizados
 
-### 1. **Repository Pattern**
+### 1. **Repository Pattern (Structural / DDD)**
 
 **O que é:** Padrão que abstrai a lógica de acesso a dados, fornecendo uma interface mais orientada a objetos para acessar dados.
 
@@ -60,7 +60,7 @@ Este documento complementar contém:
 
 ---
 
-### 2. **Adapter Pattern (Ports and Adapters)**
+### 2. **Adapter Pattern (Structural) (Ports and Adapters)**
 
 **O que é:** Padrão que permite que classes com interfaces incompatíveis trabalhem juntas, convertendo a interface de uma classe em outra interface esperada pelo cliente.
 
@@ -85,7 +85,7 @@ Este documento complementar contém:
 
 ---
 
-### 3. **Builder Pattern**
+### 3. **Builder Pattern (Creational)**
 
 **O que é:** Padrão que permite construir objetos complexos passo a passo, separando a construção da representação.
 
@@ -121,7 +121,7 @@ Order order = Order.builder()
 
 ---
 
-### 4. **State Machine Pattern**
+### 4. **State Machine Pattern (Behavioral)**
 
 **O que é:** Padrão que permite a um objeto alterar seu comportamento quando seu estado interno muda.
 
@@ -160,7 +160,7 @@ public enum OrderStatus {
 
 ---
 
-### 5. **Strategy Pattern**
+### 5. **Strategy Pattern (Behavioral)**
 
 **O que é:** Padrão que define uma família de algoritmos, encapsula cada um deles e os torna intercambiáveis.
 
@@ -187,7 +187,7 @@ public enum OrderStatus {
 
 ---
 
-### 6. **Saga Pattern (Orchestration)**
+### 6. **Saga Pattern (Behavioral / Architectural Orchestration)**
 
 **O que é:** Padrão para gerenciar transações distribuídas, garantindo consistência eventual através de uma sequência de operações locais com compensação.
 
@@ -244,7 +244,7 @@ if (command.getIdempotencyKey() != null) {
 
 ---
 
-### 7. **Use Case Pattern (Clean Architecture)**
+### 7. **Use Case Pattern (Architectural) (Clean Architecture)**
 
 **O que é:** Padrão que encapsula uma ação que o sistema pode executar, orquestrando operações de negócio.
 
@@ -344,7 +344,7 @@ if (command.getIdempotencyKey() != null) {
 
 ---
 
-### 11. **Factory Pattern - Event Publishers**
+### 11. **Factory Pattern (Creational) - Event Publishers**
 
 **O que é:** Padrão que cria instâncias de objetos sem especificar a classe exata, baseado em configuração.
 

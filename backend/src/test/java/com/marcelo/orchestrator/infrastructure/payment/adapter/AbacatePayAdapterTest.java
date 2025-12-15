@@ -17,6 +17,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -76,14 +77,24 @@ class AbacatePayAdapterTest {
     @Test
     @DisplayName("Deve processar pagamento com sucesso")
     void shouldProcessPaymentSuccessfully() {
-        // Arrange
-        AbacatePayBillingResponse response = new AbacatePayBillingResponse();
-        AbacatePayBillingResponse.AbacatePayBillingData data = new AbacatePayBillingResponse.AbacatePayBillingData();
-        data.setId("bill_123456");
-        data.setStatus("PAID");
-        data.setAmount(10050); // Em centavos
-        response.setData(data);
-        response.setError(null);
+        // Arrange - Criar Records com construtores (Records são imutáveis)
+        AbacatePayBillingResponse.AbacatePayBillingData data = new AbacatePayBillingResponse.AbacatePayBillingData(
+            "bill_123456",                    // id
+            "https://abacatepay.com/pay/123", // url
+            10050,                            // amount (em centavos)
+            "PAID",                           // status
+            true,                             // devMode
+            new String[]{"PIX"},             // methods
+            "ONE_TIME",                       // frequency
+            null,                             // customer (não necessário para este teste)
+            LocalDateTime.now(),              // createdAt
+            LocalDateTime.now()               // updatedAt
+        );
+        
+        AbacatePayBillingResponse response = new AbacatePayBillingResponse(
+            data,   // data
+            null    // error
+        );
         
         // Mock WebClient chain
         when(abacatePayWebClient.post()).thenReturn(requestBodyUriSpec);
