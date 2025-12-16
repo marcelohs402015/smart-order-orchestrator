@@ -27,9 +27,8 @@ docs/linkedin/
 *.swo
 *~
 
-# Cursor IDE - Personas e Regras (configurações pessoais)
-.cursor/rules/persona-front.md
-.cursor/rules/persona-java.md
+# Cursor IDE - Configurações pessoais (NÃO SUBIR NO GITHUB)
+.cursor/
 
 # OS
 .DS_Store
