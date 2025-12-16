@@ -109,6 +109,14 @@ abacatepay:
     key: ${ABACATEPAY_API_KEY:abc_dev_YrzNYkYCYj0QkkF6DmkJ5YYH}
 
 # ============================================================================
+# Feature Flags
+# ============================================================================
+# Permite habilitar/desabilitar funcionalidades de forma simples, sem alterar código.
+features:
+  riskAnalysis:
+    enabled: true  # Define se a análise de risco via OpenAI está ativa
+
+# ============================================================================
 # OpenAI Configuration
 # ============================================================================
 # Configuração da API do OpenAI para análise de risco com IA.
@@ -187,8 +195,9 @@ app:
 management:
   endpoints:
     web:
+      base-path: /actuator
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,circuitbreakers
   endpoint:
     health:
       show-details: when-authorized

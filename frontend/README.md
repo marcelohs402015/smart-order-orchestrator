@@ -21,12 +21,9 @@ Frontend do Smart Order Orchestrator construído com React + Vite + TypeScript.
 - 📋 Seção de pedidos recentes com estado vazio informativo
 - 🎯 Navegação clara e acessível
 
-## 📚 Documentação Completa
+## 📚 Integração com Backend
 
-- 📘 [Propósito e Integração com Backend](../docs/FRONTEND-PROPOSITO-E-INTEGRACAO.md) - Propósito do frontend, arquitetura de comunicação e integração
-- 🧪 [Testes de Jornada e Integração](../docs/FRONTEND-TESTES-JORNADA-INTEGRACAO.md) - Estratégia de testes, unitários, integração e E2E
-- 🧪 [Guia Completo de Testes (Backend)](../docs/GUIA-COMPLETO-DE-TESTES.md) - Como testar o backend
-- ☁️ [Deploy GCP - Recursos Necessários](../docs/DEPLOY-GCP-RECURSOS-NECESSARIOS.md) - Recursos e configuração para deploy
+O frontend consome APIs REST do backend Spring Boot. Veja [backend/README.md](../backend/README.md) para detalhes da API.
 
 ## 🚀 Stack Tecnológica
 
@@ -201,13 +198,11 @@ O build será gerado na pasta `dist/` e pode ser servido por qualquer servidor e
 
 ### Estratégia de Testes
 
-O frontend segue a mesma estratégia de testes do backend:
+O frontend segue a estratégia de testes:
 
 - **Testes Unitários:** Componentes isolados
 - **Testes de Integração:** Páginas completas
 - **Testes E2E:** Jornadas do usuário
-
-**Guia Completo:** Veja [docs/FRONTEND-TESTES-JORNADA-INTEGRACAO.md](../docs/FRONTEND-TESTES-JORNADA-INTEGRACAO.md)
 
 ### Como Executar Testes
 

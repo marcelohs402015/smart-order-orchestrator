@@ -1,6 +1,7 @@
 package com.marcelo.orchestrator.application.usecase;
 
 import com.marcelo.orchestrator.domain.model.Order;
+import com.marcelo.orchestrator.domain.model.OrderStatus;
 import com.marcelo.orchestrator.application.exception.OrderNotFoundException;
 import com.marcelo.orchestrator.domain.port.OrderRepositoryPort;
 import com.marcelo.orchestrator.domain.port.RiskAnalysisPort;
@@ -8,6 +9,7 @@ import com.marcelo.orchestrator.domain.port.RiskAnalysisRequest;
 import com.marcelo.orchestrator.domain.port.RiskAnalysisResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +53,15 @@ public class AnalyzeRiskUseCase {
     private final RiskAnalysisPort riskAnalysisPort;
     
     /**
+     * Feature flag para habilitar/desabilitar a análise de risco via IA.
+     * 
+     * <p>Permite desligar a integração com OpenAI sem alterar código, apenas por configuração.
+     * Default: true.</p>
+     */
+    @Value("${features.riskAnalysis.enabled:true}")
+    private boolean riskAnalysisEnabled;
+    
+    /**
      * Analisa risco de um pedido utilizando IA.
      * 
      * <p><strong>Padrão Saga:</strong> Usa REQUIRES_NEW para garantir transação
@@ -70,10 +81,18 @@ public class AnalyzeRiskUseCase {
         Order order = orderRepository.findById(command.getOrderId())
             .orElseThrow(() -> new OrderNotFoundException(command.getOrderId()));
         
-        // Validar estado - só analisa pedidos pagos
-        if (!order.isPaid()) {
+        // Feature flag: permite desabilitar a análise de risco via configuração
+        if (!riskAnalysisEnabled) {
+            log.info("Risk analysis feature is DISABLED. Skipping OpenAI call for order {}. Current riskLevel: {}",
+                order.getId(), order.getRiskLevel());
+            // Mantém fluxo de saga, apenas não chama IA. Persiste estado atual para consistência.
+            return orderRepository.save(order);
+        }
+        
+        // Validar estado - analisa pedidos PAID ou PAYMENT_PENDING (pagamento em andamento)
+        if (!(order.isPaid() || order.getStatus() == OrderStatus.PAYMENT_PENDING)) {
             throw new IllegalStateException(
-                String.format("Cannot analyze risk for order %s. Order must be PAID. Current status: %s",
+                String.format("Cannot analyze risk for order %s. Order must be PAID or PAYMENT_PENDING. Current status: %s",
                     order.getId(), order.getStatus())
             );
         }
@@ -95,8 +114,8 @@ public class AnalyzeRiskUseCase {
             // Atualizar nível de risco
             order = updateOrderRiskLevel(order, result);
             
-            log.info("Risk analysis completed for order: {} - Risk Level: {}",
-                order.getId(), order.getRiskLevel());
+            log.info("Risk analysis completed for order: {} - Risk Level: {} - Reason: {}",
+                order.getId(), order.getRiskLevel(), result.reason());
         } catch (Exception e) {
             // Fallback gracioso: mantém PENDING se análise falhar
             log.warn("Risk analysis failed for order: {} - Keeping risk level as PENDING. Error: {}",

@@ -3,6 +3,9 @@ package com.marcelo.orchestrator.presentation.controller;
 import com.marcelo.orchestrator.application.saga.OrderSagaCommand;
 import com.marcelo.orchestrator.application.saga.OrderSagaOrchestrator;
 import com.marcelo.orchestrator.application.saga.OrderSagaResult;
+import com.marcelo.orchestrator.application.usecase.AnalyzeRiskCommand;
+import com.marcelo.orchestrator.application.usecase.AnalyzeRiskUseCase;
+import com.marcelo.orchestrator.domain.model.Order;
 import com.marcelo.orchestrator.domain.port.OrderRepositoryPort;
 import com.marcelo.orchestrator.presentation.dto.CreateOrderRequest;
 import com.marcelo.orchestrator.presentation.dto.CreateOrderResponse;
@@ -55,6 +58,7 @@ public class OrderController {
     private final OrderSagaOrchestrator sagaOrchestrator;
     private final OrderRepositoryPort orderRepository;
     private final OrderPresentationMapper orderMapper;
+    private final AnalyzeRiskUseCase analyzeRiskUseCase;
     
     /**
      * Cria um novo pedido executando a saga completa.
@@ -207,6 +211,46 @@ public class OrderController {
         }
         
         return ResponseEntity.ok(orders);
+    }
+    
+    /**
+     * Dispara manualmente a análise de risco de um pedido existente.
+     * 
+     * <p>Este endpoint é útil para demonstrações e para cenários onde o pagamento ainda
+     * está PAYMENT_PENDING, mas queremos forçar a classificação de risco via IA.</p>
+     *
+     * <p>Regras:
+     * <ul>
+     *   <li>Somente pedidos com status PAID ou PAYMENT_PENDING são aceitos</li>
+     *   <li>Se a feature flag de riskAnalysis estiver desabilitada, apenas retorna o pedido atual</li>
+     * </ul>
+     * </p>
+     */
+    @PostMapping("/{id}/analyze-risk")
+    @Operation(
+        summary = "Analisar risco de um pedido via IA",
+        description = "Dispara manualmente a análise de risco usando o mecanismo de IA configurado (OpenAI), " +
+                      "para um pedido que esteja PAID ou PAYMENT_PENDING."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Análise de risco executada (ou ignorada, se desabilitada)"),
+        @ApiResponse(responseCode = "400", description = "Estado inválido para análise de risco"),
+        @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
+    })
+    public ResponseEntity<OrderResponse> analyzeRiskManually(
+            @Parameter(description = "ID do pedido", required = true)
+            @PathVariable UUID id
+    ) {
+        log.info("Manually triggering risk analysis for order {}", id);
+        
+        // Para o demo usamos PIX como paymentMethod; em cenários reais poderíamos inferir do pagamento
+        AnalyzeRiskCommand command = AnalyzeRiskCommand.builder()
+            .orderId(id)
+            .paymentMethod("PIX")
+            .build();
+        
+        Order analyzedOrder = analyzeRiskUseCase.execute(command);
+        return ResponseEntity.ok(OrderResponse.from(analyzedOrder));
     }
     
     /**

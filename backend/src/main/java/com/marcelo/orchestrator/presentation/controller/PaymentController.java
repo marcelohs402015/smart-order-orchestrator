@@ -1,8 +1,11 @@
 package com.marcelo.orchestrator.presentation.controller;
 
+import com.marcelo.orchestrator.application.usecase.AnalyzeRiskCommand;
+import com.marcelo.orchestrator.application.usecase.AnalyzeRiskUseCase;
 import com.marcelo.orchestrator.application.usecase.RefreshPaymentStatusUseCase;
 import com.marcelo.orchestrator.domain.event.saga.PaymentProcessedEvent;
 import com.marcelo.orchestrator.domain.model.Order;
+import com.marcelo.orchestrator.domain.model.RiskLevel;
 import com.marcelo.orchestrator.domain.port.EventPublisherPort;
 import com.marcelo.orchestrator.domain.port.OrderRepositoryPort;
 import com.marcelo.orchestrator.domain.port.PaymentGatewayPort;
@@ -41,6 +44,7 @@ public class PaymentController {
     private final RefreshPaymentStatusUseCase refreshPaymentStatusUseCase;
     private final OrderRepositoryPort orderRepository;
     private final EventPublisherPort eventPublisher;
+    private final AnalyzeRiskUseCase analyzeRiskUseCase;
 
     /**
      * Checks the current status of a payment in the external gateway and updates
@@ -93,6 +97,8 @@ public class PaymentController {
                 // Publicar evento no Kafka se status mudou para PAID
                 if (!wasPaid && updatedOrder.isPaid()) {
                     publishPaymentProcessedEvent(updatedOrder);
+                    // Após confirmar pagamento, disparar análise de risco se ainda estiver PENDING
+                    triggerRiskAnalysisIfNeeded(updatedOrder);
                 }
                 
                 log.info("Order {} updated with new payment status: {}", updatedOrder.getId(), gatewayStatus);
@@ -179,8 +185,39 @@ public class PaymentController {
         @PathVariable java.util.UUID orderId
     ) {
         log.info("Refreshing payment status for order {}", orderId);
-        var updatedOrder = refreshPaymentStatusUseCase.execute(orderId);
+        Order updatedOrder = refreshPaymentStatusUseCase.execute(orderId);
+        
+        // Se o pagamento foi confirmado e o risco ainda está PENDING, disparamos análise de risco
+        triggerRiskAnalysisIfNeeded(updatedOrder);
+        
         return ResponseEntity.ok(OrderResponse.from(updatedOrder));
+    }
+    
+    /**
+     * Dispara análise de risco via IA se o pedido estiver em estado adequado
+     * e ainda não tiver sido classificado (riskLevel = PENDING).
+     */
+    private void triggerRiskAnalysisIfNeeded(Order order) {
+        if (order == null) {
+            return;
+        }
+        
+        if (order.isPaid() && order.getRiskLevel() == RiskLevel.PENDING) {
+            try {
+                log.info("Triggering risk analysis after payment confirmation for order {}", order.getId());
+                AnalyzeRiskCommand command = AnalyzeRiskCommand.builder()
+                    .orderId(order.getId())
+                    .paymentMethod("PIX") // Para fins de contexto; em cenários reais viria do fluxo de pagamento
+                    .build();
+                analyzeRiskUseCase.execute(command);
+            } catch (Exception e) {
+                log.warn("Failed to analyze risk after payment confirmation for order {}: {}", 
+                    order.getId(), e.getMessage());
+            }
+        } else {
+            log.debug("Risk analysis not triggered for order {}. Status: {}, RiskLevel: {}", 
+                order.getId(), order.getStatus(), order.getRiskLevel());
+        }
     }
 }
 

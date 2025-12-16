@@ -145,13 +145,18 @@ public class OpenAIRiskAnalysisAdapter implements RiskAnalysisPort {
     /**
      * Constrói prompt estruturado para análise de risco.
      * 
-     * <p>O prompt é projetado para que a IA retorne apenas "LOW" ou "HIGH",
-     * facilitando o parsing e garantindo consistência.</p>
+     * <p>O prompt é projetado para que a IA retorne:
+     * <ul>
+     *   <li>Na primeira linha: "LOW" ou "HIGH" (para classificação)</li>
+     *   <li>Na(s) linha(s) seguinte(s): uma explicação curta do racional</li>
+     * </ul>
+     * Isso facilita o parsing do nível de risco e, ao mesmo tempo, preserva o
+     * racional da IA para logging e auditoria.</p>
      */
     private String buildRiskAnalysisPrompt(RiskAnalysisRequest request) {
         return String.format(
             "You are a risk analysis system for e-commerce orders. " +
-            "Analyze the following order and return ONLY 'LOW' or 'HIGH' (no other text).\n\n" +
+            "Analyze the following order and classify the risk.\n\n" +
             "Order Information:\n" +
             "- Order ID: %s\n" +
             "- Amount: %s\n" +
@@ -172,7 +177,10 @@ public class OpenAIRiskAnalysisAdapter implements RiskAnalysisPort {
             request.customerEmail(),
             request.paymentMethod(),
             request.additionalContext()
-        );
+        ) + "\n\n" +
+            "Respond in the following format:\n" +
+            "Line 1: ONLY the word LOW or HIGH (risk classification).\n" +
+            "Line 2: A short explanation (max 2 sentences) of why you chose this classification.";
     }
     
     /**
@@ -214,7 +222,8 @@ public class OpenAIRiskAnalysisAdapter implements RiskAnalysisPort {
             return createPendingResult(request, "Empty response from OpenAI");
         }
         
-        // Parse da resposta (deve ser "LOW" ou "HIGH")
+        // Parse da resposta: primeira linha deve conter "LOW" ou "HIGH",
+        // linhas seguintes podem conter o racional da análise.
         RiskLevel riskLevel = parseRiskLevel(content);
         
         log.info("OpenAI risk analysis for order {}: {} (response: '{}')", 
@@ -223,7 +232,7 @@ public class OpenAIRiskAnalysisAdapter implements RiskAnalysisPort {
         return new RiskAnalysisResult(
             riskLevel,
             null, // confidenceScore (não disponível na resposta simples)
-            String.format("Risk analysis completed: %s", riskLevel),
+            content, // preserva response completa como racional da IA
             java.time.LocalDateTime.now()
         );
     }
