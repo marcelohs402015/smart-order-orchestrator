@@ -104,7 +104,7 @@ source environment.sh
 ```
 
 **Variáveis necessárias:**
-- `DATABASE_URL` - URL do PostgreSQL (padrão: jdbc:postgresql://localhost:5432/smartorder)
+- `DATABASE_URL` - URL do PostgreSQL (padrão: jdbc:postgresql://localhost:5445/smartorder)
 - `DATABASE_USERNAME` - Usuário do banco (padrão: postgres)
 - `DATABASE_PASSWORD` - Senha do banco (padrão: postgres)
 - `ABACATEPAY_API_KEY` - Chave da API AbacatePay

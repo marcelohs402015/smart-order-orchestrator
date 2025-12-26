@@ -33,6 +33,7 @@ interface OrderState {
   // Estado
   orders: OrderResponse[];
   currentOrder: OrderResponse | null;
+  failedPaymentOrders: OrderResponse[]; // Pedidos com falha de pagamento (cache separado)
   loading: LoadingState;
   error: ApiError | null;
   validationErrors: Record<string, string> | null; // Erros de validação por campo
@@ -40,6 +41,7 @@ interface OrderState {
   // Actions
   fetchOrders: (status?: OrderStatus) => Promise<void>;
   fetchOrderById: (id: string) => Promise<void>;
+  fetchFailedPaymentOrders: () => Promise<void>; // Buscar pedidos com falha de pagamento
   createOrder: (request: CreateOrderRequest) => Promise<CreateOrderResponse>;
   refreshPaymentStatus: (orderId: string) => Promise<void>;
   clearError: () => void;
@@ -51,6 +53,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   // Estado inicial
   orders: [],
   currentOrder: null,
+  failedPaymentOrders: [],
   loading: 'idle',
   error: null,
   validationErrors: null,
@@ -85,6 +88,18 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         currentOrder: null,
         validationErrors: apiError.details || null,
       });
+    }
+  },
+
+  // Buscar pedidos com falha de pagamento (não altera loading global)
+  fetchFailedPaymentOrders: async () => {
+    try {
+      const failedOrders = await orderService.getAllOrders(OrderStatus.PAYMENT_FAILED);
+      set({ failedPaymentOrders: failedOrders });
+    } catch (error) {
+      // Silenciar erro, não é crítico para a funcionalidade principal
+      console.warn('Erro ao buscar pedidos com falha de pagamento:', error);
+      // Não alterar estado de erro global
     }
   },
 

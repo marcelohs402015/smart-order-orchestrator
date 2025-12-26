@@ -47,7 +47,7 @@ docker-compose exec postgres pg_isready -U postgres
    - Password: `admin`
 4. Adicione servidor:
    - Host: `postgres` (nome do serviço no Docker)
-   - Port: `5432`
+   - Port: `5432` (porta interna do container)
    - Database: `smartorder`
    - Username: `postgres`
    - Password: `postgres`
@@ -56,7 +56,7 @@ docker-compose exec postgres pg_isready -U postgres
 
 ```bash
 # Via psql (se instalado localmente)
-psql -h localhost -p 5432 -U postgres -d smartorder
+psql -h localhost -p 5445 -U postgres -d smartorder
 
 # Via Docker
 docker-compose exec postgres psql -U postgres -d smartorder
@@ -67,7 +67,7 @@ docker-compose exec postgres psql -U postgres -d smartorder
 Configure as variáveis de ambiente no `application.properties` ou `.env`:
 
 ```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/smartorder
+spring.datasource.url=jdbc:postgresql://localhost:5445/smartorder
 spring.datasource.username=postgres
 spring.datasource.password=postgres
 ```
@@ -75,7 +75,7 @@ spring.datasource.password=postgres
 Ou use variáveis de ambiente:
 
 ```bash
-export DATABASE_URL=jdbc:postgresql://localhost:5432/smartorder
+export DATABASE_URL=jdbc:postgresql://localhost:5445/smartorder
 export DATABASE_USERNAME=postgres
 export DATABASE_PASSWORD=postgres
 ```
@@ -103,6 +103,6 @@ docker-compose down --rmi all
 ## ⚠️ Notas Importantes
 
 1. **Dados Persistem**: Volumes Docker mantêm dados entre reinicializações
-2. **Portas**: Certifique-se que portas 5432 e 5050 não estão em uso
+2. **Portas**: Certifique-se que portas 5445 e 5050 não estão em uso
 3. **Produção**: Estas configurações são para desenvolvimento. Ajuste para produção!
 

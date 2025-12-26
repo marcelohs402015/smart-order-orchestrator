@@ -2,6 +2,7 @@
  * Componente OrderCard para exibir informações de um pedido.
  */
 
+import { memo } from 'react';
 import { OrderResponse } from '../types';
 import { formatCurrency, formatDate, getOrderStatusInfo, getRiskLevelInfo } from '../utils';
 import { Card } from './ui/Card';
@@ -11,7 +12,7 @@ interface OrderCardProps {
   onClick?: () => void;
 }
 
-export const OrderCard = ({ order, onClick }: OrderCardProps) => {
+const OrderCardComponent = ({ order, onClick }: OrderCardProps) => {
   const statusInfo = getOrderStatusInfo(order.status);
   const riskInfo = getRiskLevelInfo(order.riskLevel);
 
@@ -96,4 +97,16 @@ export const OrderCard = ({ order, onClick }: OrderCardProps) => {
 
   return cardContent;
 };
+
+// Memoizar componente para evitar re-renders desnecessários
+// Só re-renderiza se order ou onClick mudarem
+export const OrderCard = memo(OrderCardComponent, (prevProps, nextProps) => {
+  // Comparação customizada: só re-renderiza se order.id ou onClick mudarem
+  return (
+    prevProps.order.id === nextProps.order.id &&
+    prevProps.order.status === nextProps.order.status &&
+    prevProps.order.totalAmount === nextProps.order.totalAmount &&
+    prevProps.onClick === nextProps.onClick
+  );
+});
 

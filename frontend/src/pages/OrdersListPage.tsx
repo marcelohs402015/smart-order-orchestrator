@@ -12,6 +12,8 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useOrders } from '../hooks/useOrders';
+import { useOrderSearch } from '../hooks/useOrderSearch';
 import { useOrderStore } from '../store/orderStore';
 import { OrderCard } from '../components/OrderCard';
 import { Button } from '../components/ui/Button';
@@ -19,77 +21,51 @@ import { Input } from '../components/ui/Input';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Alert } from '../components/ui/Alert';
 import { Card } from '../components/ui/Card';
-import * as orderService from '../services/orderService';
-import { OrderResponse, ApiError, OrderStatus } from '../types';
+import { OrderStatus } from '../types';
 
 type StatusFilter = 'ALL' | OrderStatus;
 
 export const OrdersListPage = () => {
   const navigate = useNavigate();
-  const { orders, loading, error, fetchOrders, clearError } = useOrderStore();
-  const [searchNumber, setSearchNumber] = useState('');
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [searchResult, setSearchResult] = useState<OrderResponse | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [searchNumber, setSearchNumber] = useState('');
+  
+  // Hook para buscar pedidos (sem auto-fetch, vamos controlar manualmente)
+  const { orders, loading, error, refetch, clearError } = useOrders(undefined, false);
+  
+  // Hook para busca por número
+  const {
+    searchResult,
+    searchLoading,
+    searchError,
+    searchByNumber,
+    clearSearch,
+  } = useOrderSearch();
+  
+  // Buscar pedidos com falha de pagamento do store
+  const failedPaymentOrders = useOrderStore((state) => state.failedPaymentOrders);
+  const fetchFailedPaymentOrders = useOrderStore((state) => state.fetchFailedPaymentOrders);
 
   const isLoading = loading === 'loading';
   
   // Buscar pedidos quando o filtro mudar
   useEffect(() => {
     const statusToFetch = statusFilter === 'ALL' ? undefined : statusFilter;
-    fetchOrders(statusToFetch);
-  }, [statusFilter, fetchOrders]);
+    refetch(statusToFetch);
+  }, [statusFilter, refetch]);
   
-  // Separar pedidos com falha de pagamento (para a seção destacada)
-  // Buscar separadamente para mostrar na seção destacada
-  const [failedPaymentOrders, setFailedPaymentOrders] = useState<OrderResponse[]>([]);
-  
+  // Buscar pedidos com falha de pagamento ao montar
   useEffect(() => {
-    // Buscar pedidos com falha de pagamento separadamente para a seção destacada
-    const fetchFailedPayments = async () => {
-      try {
-        const failed = await orderService.getAllOrders(OrderStatus.PAYMENT_FAILED);
-        setFailedPaymentOrders(failed);
-      } catch (err) {
-        // Silenciar erro, não é crítico para a funcionalidade principal
-        console.warn('Erro ao buscar pedidos com falha de pagamento:', err);
-      }
-    };
-    fetchFailedPayments();
-  }, []);
+    fetchFailedPaymentOrders();
+  }, [fetchFailedPaymentOrders]);
 
-  const handleSearchByNumber = async () => {
-    if (!searchNumber.trim()) {
-      setSearchError('Digite um número de pedido');
-      setSearchResult(null);
-      return;
-    }
-
-    setSearchLoading(true);
-    setSearchError(null);
-    setSearchResult(null);
-
-    try {
-      const order = await orderService.getOrderByNumber(searchNumber.trim());
-      setSearchResult(order);
-    } catch (err) {
-      const apiError = err as ApiError;
-      if (apiError.status === 404) {
-        setSearchError('Pedido não encontrado');
-      } else {
-        setSearchError(apiError.message || 'Erro ao buscar pedido');
-      }
-      setSearchResult(null);
-    } finally {
-      setSearchLoading(false);
-    }
+  const handleSearchByNumber = () => {
+    searchByNumber(searchNumber);
   };
 
   const handleClearSearch = () => {
     setSearchNumber('');
-    setSearchError(null);
-    setSearchResult(null);
+    clearSearch();
   };
 
   if (isLoading) {
@@ -139,7 +115,10 @@ export const OrdersListPage = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => fetchOrders()}
+                    onClick={() => {
+                      const statusToFetch = statusFilter === 'ALL' ? undefined : statusFilter;
+                      refetch(statusToFetch);
+                    }}
                     disabled={isLoading}
                   >
                     Tentar Novamente
@@ -164,7 +143,10 @@ export const OrdersListPage = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => fetchOrders()}
+                  onClick={() => {
+                    const statusToFetch = statusFilter === 'ALL' ? undefined : statusFilter;
+                    refetch(statusToFetch);
+                  }}
                   disabled={isLoading}
                 >
                   Tentar Novamente
@@ -190,6 +172,8 @@ export const OrdersListPage = () => {
                 }
               }}
               error={searchError || undefined}
+              value={searchNumber}
+              onChange={(e) => setSearchNumber(e.target.value)}
             />
           </div>
           <div className="flex items-end gap-2">
@@ -200,7 +184,7 @@ export const OrdersListPage = () => {
             >
               Buscar
             </Button>
-            {searchResult && (
+            {(searchResult || searchError) && (
               <Button
                 variant="secondary"
                 onClick={handleClearSearch}

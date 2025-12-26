@@ -9,9 +9,9 @@
  * </ul>
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useOrderStore } from '../store/orderStore';
+import { useOrder } from '../hooks/useOrder';
 import { formatCurrency, formatDate, getOrderStatusInfo, getRiskLevelInfo } from '../utils';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -23,21 +23,14 @@ export const OrderDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const {
-    currentOrder,
+    order: currentOrder,
     loading,
     error,
-    fetchOrderById,
     refreshPaymentStatus,
     clearError,
-  } = useOrderStore();
+  } = useOrder(id);
   const [isRefreshingPayment, setIsRefreshingPayment] = useState(false);
   const [refreshError, setRefreshError] = useState<typeof error>(null);
-
-  useEffect(() => {
-    if (id) {
-      fetchOrderById(id);
-    }
-  }, [id, fetchOrderById]);
 
   if (loading === 'loading' && !currentOrder) {
     return (

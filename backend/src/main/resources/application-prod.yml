@@ -19,7 +19,7 @@ spring:
   # PostgreSQL para produção (via Secret Manager ou variáveis de ambiente)
   # Prioridade: Secret Manager (sm://) > Variável de Ambiente > Valor padrão
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/smartorder}
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5445/smartorder}
     username: ${DATABASE_USERNAME:postgres}
     # Usar Secret Manager em produção (sm://) ou variável de ambiente como fallback
     password: ${sm://database-password:${DATABASE_PASSWORD:postgres}}

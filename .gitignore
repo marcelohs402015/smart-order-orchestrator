@@ -1,23 +1,6 @@
 # Documentos confidenciais de preparação para entrevista (NÃO SUBIR NO GITHUB)
 docs/*
-docs/accenture/*
-docs/PREPARACAO-ENTREVISTA-TECNICA-ACCENTURE.md
-docs/FEATURES-STACK-BIG-TECHS-ACCENTURE.md
-docs/ENTREVISTA-ACCENTURE-SCRIPT.md
-docs/CONTEXTO-PROJETO.md
-docs/accenture/PREPARACAO-ENTREVISTA-TECNICA-ACCENTURE.md
-docs/accenture/FEATURES-STACK-BIG-TECHS-ACCENTURE.md
-docs/accenture/ENTREVISTA-ACCENTURE-SCRIPT.md
-docs/accenture/CONTEXTO-PROJETO.md
 
-# Documentos de contexto de sessão (NÃO SUBIR NO GITHUB)
-docs/CONTEXTO-SESSAO-*.md
-docs/CONTEXTO-IMPLEMENTACAO-FRONTEND.md
-frontend/docs/CONTEXTO-*.md
-frontend/CONTEXTO-*.md
-
-# Documentos do LinkedIn (posts pessoais - NÃO SUBIR NO GITHUB)
-docs/linkedin/
 
 # IDE
 .idea/

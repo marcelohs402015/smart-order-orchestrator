@@ -9,9 +9,8 @@
  * </ul>
  */
 
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useOrderStore } from '../store/orderStore';
+import { useOrders } from '../hooks/useOrders';
 import { OrderStatus } from '../types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -21,12 +20,7 @@ import { Alert } from '../components/ui/Alert';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
-  const { orders, loading, error, fetchOrders, clearError } = useOrderStore();
-
-  useEffect(() => {
-    // Buscar todos os pedidos para estatísticas
-    fetchOrders();
-  }, [fetchOrders]);
+  const { orders, loading, error, refetch, clearError } = useOrders();
 
   // Estatísticas (calculadas a partir de todos os pedidos)
   const totalOrders = orders.length;
@@ -70,7 +64,7 @@ export const DashboardPage = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => fetchOrders()}
+                    onClick={() => refetch()}
                     disabled={loading === 'loading'}
                   >
                     Tentar Novamente
@@ -95,7 +89,7 @@ export const DashboardPage = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => fetchOrders()}
+                  onClick={() => refetch()}
                   disabled={loading === 'loading'}
                 >
                   Tentar Novamente
