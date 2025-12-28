@@ -1,23 +1,3 @@
-/**
- * Store Zustand para gerenciamento de estado de pedidos.
- * 
- * <h3>Por que Zustand?</h3>
- * <ul>
- *   <li><strong>Leve:</strong> ~1KB minificado</li>
- *   <li><strong>Simples:</strong> API intuitiva, sem boilerplate</li>
- *   <li><strong>TypeScript:</strong> Suporte completo a tipos</li>
- *   <li><strong>Performance:</strong> Re-renderiza apenas componentes que usam estado alterado</li>
- * </ul>
- * 
- * <h3>Estrutura do Store:</h3>
- * <ul>
- *   <li><strong>orders:</strong> Lista de pedidos</li>
- *   <li><strong>currentOrder:</strong> Pedido sendo visualizado/editado</li>
- *   <li><strong>loading:</strong> Estado de carregamento</li>
- *   <li><strong>error:</strong> Erro atual (se houver)</li>
- * </ul>
- */
-
 import { create } from 'zustand';
 import {
   OrderResponse,
@@ -30,18 +10,16 @@ import {
 import * as orderService from '../services/orderService';
 
 interface OrderState {
-  // Estado
   orders: OrderResponse[];
   currentOrder: OrderResponse | null;
-  failedPaymentOrders: OrderResponse[]; // Pedidos com falha de pagamento (cache separado)
+  failedPaymentOrders: OrderResponse[];
   loading: LoadingState;
   error: ApiError | null;
-  validationErrors: Record<string, string> | null; // Erros de validação por campo
+  validationErrors: Record<string, string> | null;
 
-  // Actions
   fetchOrders: (status?: OrderStatus) => Promise<void>;
   fetchOrderById: (id: string) => Promise<void>;
-  fetchFailedPaymentOrders: () => Promise<void>; // Buscar pedidos com falha de pagamento
+  fetchFailedPaymentOrders: () => Promise<void>;
   createOrder: (request: CreateOrderRequest) => Promise<CreateOrderResponse>;
   refreshPaymentStatus: (orderId: string) => Promise<void>;
   clearError: () => void;
@@ -50,7 +28,6 @@ interface OrderState {
 }
 
 export const useOrderStore = create<OrderState>((set, get) => ({
-  // Estado inicial
   orders: [],
   currentOrder: null,
   failedPaymentOrders: [],
@@ -58,7 +35,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   error: null,
   validationErrors: null,
 
-  // Buscar todos os pedidos (opcionalmente filtrado por status)
   fetchOrders: async (status?: OrderStatus) => {
     set({ loading: 'loading', error: null, validationErrors: null });
     try {
@@ -74,7 +50,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
   },
 
-  // Buscar pedido por ID
   fetchOrderById: async (id: string) => {
     set({ loading: 'loading', error: null, currentOrder: null, validationErrors: null });
     try {
@@ -91,26 +66,21 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
   },
 
-  // Buscar pedidos com falha de pagamento (não altera loading global)
   fetchFailedPaymentOrders: async () => {
     try {
       const failedOrders = await orderService.getAllOrders(OrderStatus.PAYMENT_FAILED);
       set({ failedPaymentOrders: failedOrders });
     } catch (error) {
-      // Silenciar erro, não é crítico para a funcionalidade principal
       console.warn('Erro ao buscar pedidos com falha de pagamento:', error);
-      // Não alterar estado de erro global
     }
   },
 
-  // Criar novo pedido
   createOrder: async (request: CreateOrderRequest) => {
     set({ loading: 'loading', error: null, validationErrors: null });
     try {
       const response = await orderService.createOrder(request);
       
       if (response.success && response.order) {
-        // Sucesso: Pedido criado com sucesso (201)
         const currentOrders = get().orders;
         set({
           orders: [response.order, ...currentOrders],
@@ -120,10 +90,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           validationErrors: null,
         });
       } else if (response.sagaExecutionId && !response.success) {
-        // Saga em progresso (202 ACCEPTED) - não é erro, mas estado intermediário
-        // O backend retorna 202 quando a saga já está em progresso (idempotência)
         set({
-          loading: 'success', // Não é erro, mas sucesso parcial
+          loading: 'success',
           error: {
             message: response.errorMessage || 'Pedido está sendo processado. Aguarde a conclusão.',
             status: 202,
@@ -131,14 +99,12 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           validationErrors: null,
         });
       } else {
-        // Falha na saga (400) - erro de negócio, não de validação
-        // Exemplos: pagamento falhou, análise de risco falhou, etc.
         set({
           loading: 'error',
           error: {
             message: response.errorMessage || 'Erro ao processar pedido. A saga falhou durante a execução.',
             status: 400,
-            isBusinessError: true, // Marcar como erro de negócio, não de validação
+            isBusinessError: true,
           },
           validationErrors: null,
         });
@@ -147,7 +113,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       return response;
     } catch (error) {
       const apiError = error as ApiError;
-      // Extrair erros de validação (details) se disponível
       const validationErrors = apiError.details || null;
       
       set({
@@ -159,21 +124,16 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
   },
 
-  // Atualizar status do pagamento
   refreshPaymentStatus: async (orderId: string) => {
-    // Não alterar loading global para não interferir com a UI
-    // Apenas limpar erros anteriores
     set({ error: null, validationErrors: null });
     try {
       const updatedOrder = await orderService.refreshPaymentStatus(orderId);
       
-      // Atualizar currentOrder se for o pedido atual
       const currentOrder = get().currentOrder;
       if (currentOrder && currentOrder.id === orderId) {
         set({ currentOrder: updatedOrder });
       }
       
-      // Atualizar na lista de pedidos também
       const currentOrders = get().orders;
       const updatedOrders = currentOrders.map((order) =>
         order.id === orderId ? updatedOrder : order
@@ -194,19 +154,15 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
   },
 
-  // Limpar erro
   clearError: () => {
     set({ error: null, validationErrors: null });
   },
 
-  // Limpar erros de validação
   clearValidationErrors: () => {
     set({ validationErrors: null });
   },
 
-  // Limpar pedido atual
   clearCurrentOrder: () => {
     set({ currentOrder: null });
   },
 }));
-

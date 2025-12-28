@@ -1,30 +1,12 @@
-/**
- * Estilos globais da aplicação.
- * 
- * <h3>TailwindCSS Directives:</h3>
- * <ul>
- *   <li><strong>@tailwind base:</strong> Reset CSS e estilos base</li>
- *   <li><strong>@tailwind components:</strong> Componentes utilitários do Tailwind</li>
- *   <li><strong>@tailwind utilities:</strong> Classes utilitárias (flex, grid, etc.)</li>
- * </ul>
- * 
- * <h3>Customizações:</h3>
- * <p>Adicione estilos customizados globais aqui se necessário.
- * Prefira usar classes Tailwind sempre que possível.</p>
- */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/**
- * Reset e estilos base customizados (opcional)
- */
 @layer base {
   body {
     @apply bg-gray-50 text-gray-900 antialiased;
   }
   
-  /* Scrollbar customizada (opcional) */
   ::-webkit-scrollbar {
     @apply w-2;
   }
@@ -41,4 +23,3 @@
     @apply bg-gray-400;
   }
 }
-

@@ -6,11 +6,6 @@ import lombok.Setter;
 
 import java.util.List;
 
-/**
- * DTO de resposta da API OpenAI (Chat Completions).
- * 
- * @author Marcelo Hernandes da Silva
- */
 @Getter
 @Setter
 public class OpenAIResponse {
@@ -80,4 +75,3 @@ public class OpenAIResponse {
         private Integer totalTokens;
     }
 }
-

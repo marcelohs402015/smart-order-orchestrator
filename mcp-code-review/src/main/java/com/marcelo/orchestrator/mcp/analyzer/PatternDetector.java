@@ -12,15 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-/**
- * Detector de design patterns e verificação SOLID.
- *
- * <p>Analisa código para identificar:
- * - Design Patterns (Factory, Adapter, Strategy, etc.)
- * - Conformidade com princípios SOLID</p>
- *
- * @author Marcelo Hernandes da Silva
- */
 @Slf4j
 @Component
 public class PatternDetector {
@@ -31,9 +22,6 @@ public class PatternDetector {
         this.javaParser = new JavaParser();
     }
 
-    /**
-     * Analisa código para detectar patterns e verificar SOLID.
-     */
     public Map<String, Object> analyze(String code, boolean checkSolid) {
         Map<String, Object> result = new HashMap<>();
         List<String> patterns = new ArrayList<>();
@@ -44,17 +32,14 @@ public class PatternDetector {
             cu.findAll(ClassOrInterfaceDeclaration.class).forEach(clazz -> {
                 String className = clazz.getNameAsString();
 
-                // Detectar Factory Pattern
                 if (className.contains("Factory") && hasCreateMethod(clazz)) {
                     patterns.add("Factory Pattern");
                 }
 
-                // Detectar Adapter Pattern
                 if (className.contains("Adapter") && implementsInterface(clazz)) {
                     patterns.add("Adapter Pattern");
                 }
 
-                // Detectar Strategy Pattern
                 if (hasStrategyMethods(clazz)) {
                     patterns.add("Strategy Pattern");
                 }
@@ -91,10 +76,9 @@ public class PatternDetector {
     private Map<String, Boolean> checkSolidPrinciples(String code, CompilationUnit cu) {
         Map<String, Boolean> solid = new HashMap<>();
 
-        // Verificação básica (pode ser expandida)
         solid.put("Single Responsibility", checkSingleResponsibility(cu));
-        solid.put("Open/Closed", true); // Simplificado
-        solid.put("Liskov Substitution", true); // Simplificado
+        solid.put("Open/Closed", true);
+        solid.put("Liskov Substitution", true);
         solid.put("Interface Segregation", checkInterfaceSegregation(cu));
         solid.put("Dependency Inversion", checkDependencyInversion(code));
 
@@ -102,23 +86,19 @@ public class PatternDetector {
     }
 
     private boolean checkSingleResponsibility(CompilationUnit cu) {
-        // Verificar se a classe tem muitas responsabilidades
         return cu.findAll(ClassOrInterfaceDeclaration.class).stream()
             .allMatch(clazz -> clazz.getMethods().size() < 15);
     }
 
     private boolean checkInterfaceSegregation(CompilationUnit cu) {
-        // Verificar se interfaces são pequenas e focadas
         return cu.findAll(ClassOrInterfaceDeclaration.class).stream()
             .filter(ClassOrInterfaceDeclaration::isInterface)
             .allMatch(iface -> iface.getMethods().size() < 5);
     }
 
     private boolean checkDependencyInversion(String code) {
-        // Verificar se há dependências de abstrações (interfaces)
         Pattern interfacePattern = Pattern.compile("implements\\s+\\w+");
         Pattern abstractPattern = Pattern.compile("abstract\\s+class");
         return interfacePattern.matcher(code).find() || abstractPattern.matcher(code).find();
     }
 }
-

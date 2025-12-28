@@ -1,7 +1,3 @@
-/**
- * Componente LoadingSpinner para indicar carregamento.
- */
-
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -39,4 +35,3 @@ export const LoadingSpinner = ({ size = 'md', className = '' }: LoadingSpinnerPr
     </div>
   );
 };
-

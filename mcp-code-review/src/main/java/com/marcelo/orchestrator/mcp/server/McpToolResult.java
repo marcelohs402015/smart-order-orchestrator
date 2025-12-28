@@ -6,11 +6,6 @@ import lombok.Getter;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Resultado da execução de uma ferramenta MCP.
- *
- * @author Marcelo Hernandes da Silva
- */
 @Getter
 @Builder
 public class McpToolResult {
@@ -42,4 +37,3 @@ public class McpToolResult {
             .build();
     }
 }
-

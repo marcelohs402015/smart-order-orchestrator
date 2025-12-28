@@ -1,14 +1,3 @@
-/**
- * Custom hook para busca de pedido por número.
- * 
- * <h3>Responsabilidades:</h3>
- * <ul>
- *   <li>Encapsula lógica de busca por número de pedido</li>
- *   <li>Gerencia estado local de busca</li>
- *   <li>Isola lógica de busca do componente</li>
- * </ul>
- */
-
 import { useState, useCallback } from 'react';
 import { getOrderByNumber } from '../services/orderService';
 import { OrderResponse, ApiError } from '../types';
@@ -21,11 +10,6 @@ interface UseOrderSearchReturn {
   clearSearch: () => void;
 }
 
-/**
- * Hook para buscar pedido por número.
- * 
- * @returns Objeto com resultado da busca, loading, error e funções de controle
- */
 export const useOrderSearch = (): UseOrderSearchReturn => {
   const [searchResult, setSearchResult] = useState<OrderResponse | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -71,4 +55,3 @@ export const useOrderSearch = (): UseOrderSearchReturn => {
     clearSearch,
   };
 };
-

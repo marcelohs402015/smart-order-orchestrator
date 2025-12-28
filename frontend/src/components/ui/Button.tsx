@@ -1,16 +1,3 @@
-/**
- * Componente Button reutilizável.
- * 
- * <h3>Características:</h3>
- * <ul>
- *   <li>Múltiplas variantes (primary, secondary, danger)</li>
- *   <li>Múltiplos tamanhos (sm, md, lg)</li>
- *   <li>Estado de loading</li>
- *   <li>Desabilitado</li>
- *   <li>Acessibilidade completa</li>
- * </ul>
- */
-
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 import { cn } from '../../utils';
 
@@ -88,4 +75,3 @@ export const Button = ({
     </button>
   );
 };
-

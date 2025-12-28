@@ -16,28 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Ferramenta MCP para code review completo.
- *
- * <p>Analisa código Java e fornece feedback estruturado sobre:
- * - Qualidade do código
- * - Padrões SOLID
- * - Boas práticas
- * - Sugestões de melhoria</p>
- *
- * <h3>Uso via MCP:</h3>
- * <pre>
- * {
- *   "tool": "review_code",
- *   "arguments": {
- *     "file_path": "backend/src/main/java/.../OrderSagaOrchestrator.java",
- *     "focus": "SOLID principles"
- *   }
- * }
- * </pre>
- *
- * @author Marcelo Hernandes da Silva
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -46,9 +24,6 @@ public class CodeReviewTool {
     private final CodeAnalyzer codeAnalyzer;
     private final AiFeedbackService aiFeedbackService;
 
-    /**
-     * Retorna a definição da ferramenta para o protocolo MCP.
-     */
     public McpTool getToolDefinition() {
         Map<String, Object> inputSchema = Map.of(
             "type", "object",
@@ -77,12 +52,6 @@ public class CodeReviewTool {
             .build();
     }
 
-    /**
-     * Executa a análise de código.
-     *
-     * @param arguments Argumentos da ferramenta (file_path, focus)
-     * @return Resultado da análise
-     */
     public McpToolResult execute(Map<String, Object> arguments) {
         try {
             String filePath = (String) arguments.get("file_path");
@@ -90,22 +59,17 @@ public class CodeReviewTool {
 
             log.info("Reviewing code: {} with focus: {}", filePath, focus);
 
-            // Resolver caminho relativo ao projeto
             Path path = resolveFilePath(filePath);
             if (!Files.exists(path)) {
                 return McpToolResult.error("File not found: " + filePath);
             }
 
-            // Ler conteúdo do arquivo
             String code = Files.readString(path);
 
-            // Análise estática com JavaParser
             Map<String, Object> analysis = codeAnalyzer.analyze(code, focus);
 
-            // Feedback contextualizado com IA
             String aiFeedback = aiFeedbackService.generateFeedback(code, analysis, focus);
 
-            // Construir resultado
             List<String> issues = extractIssues(analysis);
             Map<String, Object> metadata = new HashMap<>(analysis);
             metadata.put("file_path", filePath);
@@ -122,11 +86,9 @@ public class CodeReviewTool {
     }
 
     private Path resolveFilePath(String filePath) {
-        // Se for caminho absoluto, usar diretamente
         if (Paths.get(filePath).isAbsolute()) {
             return Paths.get(filePath);
         }
-        // Caso contrário, assumir relativo ao diretório raiz do projeto
         return Paths.get("..", filePath).normalize();
     }
 
@@ -161,4 +123,3 @@ public class CodeReviewTool {
         return sb.toString();
     }
 }
-

@@ -1,14 +1,3 @@
-/**
- * Componente Card reutilizável.
- * 
- * <h3>Características:</h3>
- * <ul>
- *   <li>Header opcional</li>
- *   <li>Footer opcional</li>
- *   <li>Padding customizável</li>
- * </ul>
- */
-
 import { ReactNode } from 'react';
 import { cn } from '../../utils';
 
@@ -56,4 +45,3 @@ export const Card = ({
     </div>
   );
 };
-

@@ -1,15 +1,3 @@
-/**
- * Página para listar todos os pedidos.
- * 
- * <h3>Funcionalidades:</h3>
- * <ul>
- *   <li>Lista de pedidos com cards</li>
- *   <li>Filtros por status (futuro)</li>
- *   <li>Busca (futuro)</li>
- *   <li>Paginação (futuro)</li>
- * </ul>
- */
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOrders } from '../hooks/useOrders';
@@ -30,10 +18,8 @@ export const OrdersListPage = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [searchNumber, setSearchNumber] = useState('');
   
-  // Hook para buscar pedidos (sem auto-fetch, vamos controlar manualmente)
   const { orders, loading, error, refetch, clearError } = useOrders(undefined, false);
   
-  // Hook para busca por número
   const {
     searchResult,
     searchLoading,
@@ -42,19 +28,16 @@ export const OrdersListPage = () => {
     clearSearch,
   } = useOrderSearch();
   
-  // Buscar pedidos com falha de pagamento do store
   const failedPaymentOrders = useOrderStore((state) => state.failedPaymentOrders);
   const fetchFailedPaymentOrders = useOrderStore((state) => state.fetchFailedPaymentOrders);
 
   const isLoading = loading === 'loading';
   
-  // Buscar pedidos quando o filtro mudar
   useEffect(() => {
     const statusToFetch = statusFilter === 'ALL' ? undefined : statusFilter;
     refetch(statusToFetch);
   }, [statusFilter, refetch]);
   
-  // Buscar pedidos com falha de pagamento ao montar
   useEffect(() => {
     fetchFailedPaymentOrders();
   }, [fetchFailedPaymentOrders]);
@@ -172,8 +155,6 @@ export const OrdersListPage = () => {
                 }
               }}
               error={searchError || undefined}
-              value={searchNumber}
-              onChange={(e) => setSearchNumber(e.target.value)}
             />
           </div>
           <div className="flex items-end gap-2">
@@ -204,7 +185,6 @@ export const OrdersListPage = () => {
         )}
       </Card>
 
-      {/* Seção de Pedidos com Falha de Pagamento */}
       {failedPaymentOrders.length > 0 && (
         <Card className="mb-6 border-2 border-red-300 bg-red-50">
           <div className="flex items-center justify-between mb-4">
@@ -246,7 +226,6 @@ export const OrdersListPage = () => {
         </Card>
       )}
 
-      {/* Filtros por Status */}
       <Card className="mb-6">
         <h2 className="text-xl font-semibold mb-4">Filtros</h2>
         <div className="flex flex-wrap gap-2">
@@ -288,7 +267,6 @@ export const OrdersListPage = () => {
         </div>
       </Card>
 
-      {/* Lista de Pedidos Filtrados */}
       {orders.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg mb-4">
@@ -334,4 +312,3 @@ export const OrdersListPage = () => {
     </div>
   );
 };
-

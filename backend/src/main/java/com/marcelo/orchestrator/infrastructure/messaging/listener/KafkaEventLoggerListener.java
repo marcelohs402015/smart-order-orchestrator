@@ -13,32 +13,6 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.time.Instant;
 
-/**
- * Listener simples para logar mensagens recebidas dos tópicos Kafka.
- *
- * <p>Objetivo principal: demonstrar consumo de mensagens Kafka pela aplicação,
- * exibindo no console o conteúdo e metadados das mensagens.</p>
- *
- * <h3>Padrão: Observer / Event Listener</h3>
- * <ul>
- *   <li><strong>Listener:</strong> Esta classe observa eventos publicados nos tópicos Kafka</li>
- *   <li><strong>Side-effect:</strong> Apenas logging (sem lógica de negócio)</li>
- *   <li><strong>Separação:</strong> Mantém consumo para observabilidade separado do domínio</li>
- * </ul>
- *
- * <h3>Configuração de Offset:</h3>
- * <p>O consumer é configurado com <code>auto-offset-reset=earliest</code> no
- * <code>application.yml</code>, garantindo que, ao iniciar um novo consumer group,
- * as mensagens mais antigas sejam lidas primeiro.</p>
- *
- * <h3>Boas práticas:</h3>
- * <ul>
- *   <li>Uso apenas para logging / demo (não acopla lógica de negócio)</li>
- *   <li>Facilita demonstração em entrevistas e testes end-to-end</li>
- * </ul>
- *
- * @author Marcelo
- */
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "app.message.broker.type", havingValue = "KAFKA")
@@ -47,18 +21,6 @@ public class KafkaEventLoggerListener {
 
     private final KafkaConsumerMetrics metrics;
 
-    /**
-     * Listener que consome eventos de todos os tópicos da saga e loga no console.
-     *
-     * <p>Consome como String (JSON bruto) para simplificar e focar na demonstração
-     * de consumo. A responsabilidade de interpretar o JSON fica para potenciais
-     * consumidores especializados em outros serviços.</p>
-     *
-     * @param record    registro completo recebido do Kafka (para debug avançado)
-     * @param payload   corpo da mensagem (JSON do DomainEvent)
-     * @param topic     nome do tópico
-     * @param key       chave da mensagem (aggregateId ou eventId)
-     */
     @KafkaListener(
         topics = {
             "${app.message.broker.kafka.topics.order-created}",
@@ -78,7 +40,6 @@ public class KafkaEventLoggerListener {
         final Instant startTime = Instant.now();
 
         try {
-            // Registra métricas de consumo
             metrics.recordMessageConsumed(
                     record.topic(),
                     eventType,
@@ -97,19 +58,15 @@ public class KafkaEventLoggerListener {
                 payload
             );
 
-            // Registra tempo de processamento e sucesso
             final Duration processingTime = Duration.between(startTime, Instant.now());
             metrics.recordProcessingTime(record.topic(), eventType, processingTime);
             metrics.recordSuccess(record.topic(), eventType);
 
         } catch (Exception e) {
-            // Registra erro nas métricas
             metrics.recordError(record.topic(), eventType, e);
             log.error("Error processing Kafka message: topic={}, eventType={}, error={}", 
                     record.topic(), eventType, e.getMessage(), e);
-            throw e; // Re-throw para que o Kafka possa fazer retry se configurado
+            throw e;
         }
     }
 }
-
-

@@ -6,14 +6,6 @@ import lombok.Getter;
 
 import java.util.List;
 
-/**
- * DTO de requisição para a API do OpenAI (Chat Completions).
- * 
- * <p>Representa o formato de dados esperado pela API do OpenAI
- * para análise de código e geração de feedback.</p>
- * 
- * @author Marcelo Hernandes da Silva
- */
 @Getter
 @Builder
 public class OpenAIRequest {
@@ -40,4 +32,3 @@ public class OpenAIRequest {
         private String content;
     }
 }
-

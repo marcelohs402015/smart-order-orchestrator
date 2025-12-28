@@ -1,14 +1,3 @@
-/**
- * Componente Layout para estrutura comum da aplicação.
- * 
- * <h3>Características:</h3>
- * <ul>
- *   <li>Header com navegação</li>
- *   <li>Footer (opcional)</li>
- *   <li>Container principal</li>
- * </ul>
- */
-
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../utils';
@@ -28,7 +17,6 @@ export const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -62,10 +50,8 @@ export const Layout = ({ children }: LayoutProps) => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main>{children}</main>
 
-      {/* Footer */}
       <footer className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <p className="text-center text-sm text-gray-500">
@@ -76,4 +62,3 @@ export const Layout = ({ children }: LayoutProps) => {
     </div>
   );
 };
-

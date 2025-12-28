@@ -13,20 +13,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.util.List;
 import java.util.Map;
 
-/**
- * Serviço de feedback contextualizado com IA.
- *
- * <p>Usa OpenAI para gerar feedback contextualizado sobre código,
- * baseado na análise estática realizada pelo CodeAnalyzer.</p>
- *
- * <h3>Integração com IA:</h3>
- * <ul>
- *   <li>OpenAI GPT-3.5/GPT-4: Análise de código e sugestões</li>
- *   <li>Claude (futuro): Alternativa para análise</li>
- * </ul>
- *
- * @author Marcelo Hernandes da Silva
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -44,14 +30,6 @@ public class AiFeedbackService {
     @Value("${openai.api.max-tokens:1000}")
     private Integer maxTokens;
 
-    /**
-     * Gera feedback contextualizado com IA baseado na análise estática.
-     *
-     * @param code Código fonte
-     * @param analysis Resultado da análise estática
-     * @param focus Foco da análise
-     * @return Feedback contextualizado
-     */
     public String generateFeedback(String code, Map<String, Object> analysis, String focus) {
         try {
             String prompt = buildPrompt(code, analysis, focus);
@@ -64,7 +42,7 @@ public class AiFeedbackService {
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(OpenAIResponse.class)
-                .block(); // Bloqueia para retorno síncrono
+                .block();
             
             if (response != null && response.isSuccess()) {
                 return response.getContent();
@@ -82,9 +60,6 @@ public class AiFeedbackService {
         }
     }
     
-    /**
-     * Constrói OpenAIRequest a partir do prompt.
-     */
     private OpenAIRequest buildOpenAIRequest(String prompt) {
         OpenAIRequest.Message systemMessage = OpenAIRequest.Message.builder()
             .role("system")
@@ -124,4 +99,3 @@ public class AiFeedbackService {
         return prompt.toString();
     }
 }
-

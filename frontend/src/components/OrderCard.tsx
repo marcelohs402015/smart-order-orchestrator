@@ -1,7 +1,3 @@
-/**
- * Componente OrderCard para exibir informações de um pedido.
- */
-
 import { memo } from 'react';
 import { OrderResponse } from '../types';
 import { formatCurrency, formatDate, getOrderStatusInfo, getRiskLevelInfo } from '../utils';
@@ -21,7 +17,6 @@ const OrderCardComponent = ({ order, onClick }: OrderCardProps) => {
       className={onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}
     >
       <div className="space-y-4">
-        {/* Header */}
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">
@@ -38,7 +33,6 @@ const OrderCardComponent = ({ order, onClick }: OrderCardProps) => {
           </span>
         </div>
 
-        {/* Info */}
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-gray-500">Total</p>
@@ -54,7 +48,6 @@ const OrderCardComponent = ({ order, onClick }: OrderCardProps) => {
           </div>
         </div>
 
-        {/* Risk Level */}
         {order.riskLevel && (
           <div>
             <p className="text-xs text-gray-500 mb-1">Nível de Risco</p>
@@ -66,7 +59,6 @@ const OrderCardComponent = ({ order, onClick }: OrderCardProps) => {
           </div>
         )}
 
-        {/* Footer */}
         <div className="pt-4 border-t border-gray-200">
           <p className="text-xs text-gray-500">
             Criado em {formatDate(order.createdAt)}
@@ -98,10 +90,7 @@ const OrderCardComponent = ({ order, onClick }: OrderCardProps) => {
   return cardContent;
 };
 
-// Memoizar componente para evitar re-renders desnecessários
-// Só re-renderiza se order ou onClick mudarem
 export const OrderCard = memo(OrderCardComponent, (prevProps, nextProps) => {
-  // Comparação customizada: só re-renderiza se order.id ou onClick mudarem
   return (
     prevProps.order.id === nextProps.order.id &&
     prevProps.order.status === nextProps.order.status &&
@@ -109,4 +98,3 @@ export const OrderCard = memo(OrderCardComponent, (prevProps, nextProps) => {
     prevProps.onClick === nextProps.onClick
   );
 });
-

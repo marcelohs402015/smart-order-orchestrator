@@ -1,14 +1,3 @@
-/**
- * Página Dashboard com visão geral do sistema.
- * 
- * <h3>Funcionalidades:</h3>
- * <ul>
- *   <li>Estatísticas gerais</li>
- *   <li>Pedidos recentes</li>
- *   <li>Ações rápidas</li>
- * </ul>
- */
-
 import { useNavigate } from 'react-router-dom';
 import { useOrders } from '../hooks/useOrders';
 import { OrderStatus } from '../types';
@@ -22,7 +11,6 @@ export const DashboardPage = () => {
   const navigate = useNavigate();
   const { orders, loading, error, refetch, clearError } = useOrders();
 
-  // Estatísticas (calculadas a partir de todos os pedidos)
   const totalOrders = orders.length;
   const paidOrders = orders.filter((o) => o.status === OrderStatus.PAID).length;
   const pendingOrders = orders.filter((o) => o.status === OrderStatus.PENDING).length;
@@ -106,7 +94,6 @@ export const DashboardPage = () => {
         </div>
       ) : (
         <>
-          {/* Estatísticas */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card padding="md">
               <div className="text-center">
@@ -134,7 +121,6 @@ export const DashboardPage = () => {
             </Card>
           </div>
 
-          {/* Alerta de Pedidos com Falha de Pagamento */}
           {failedPaymentCount > 0 && (
             <Card className="mb-8 border-2 border-red-300 bg-red-50">
               <div className="flex items-center justify-between mb-4">
@@ -176,7 +162,6 @@ export const DashboardPage = () => {
             </Card>
           )}
 
-          {/* Ações Rápidas */}
           <Card className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Ações Rápidas</h2>
             <div className="flex flex-wrap gap-4">
@@ -192,7 +177,6 @@ export const DashboardPage = () => {
             </div>
           </Card>
 
-          {/* Pedidos Recentes */}
           <Card>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">Pedidos Recentes</h2>
@@ -225,4 +209,3 @@ export const DashboardPage = () => {
     </div>
   );
 };
-

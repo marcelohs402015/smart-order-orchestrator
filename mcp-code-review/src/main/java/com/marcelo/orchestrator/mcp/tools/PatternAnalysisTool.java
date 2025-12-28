@@ -13,13 +13,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Ferramenta MCP para análise de design patterns.
- *
- * <p>Detecta design patterns no código e verifica conformidade com SOLID.</p>
- *
- * @author Marcelo Hernandes da Silva
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -110,4 +103,3 @@ public class PatternAnalysisTool {
         return sb.toString();
     }
 }
-

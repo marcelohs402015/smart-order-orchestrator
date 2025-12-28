@@ -1,14 +1,3 @@
-/**
- * Página para visualizar detalhes de um pedido.
- * 
- * <h3>Funcionalidades:</h3>
- * <ul>
- *   <li>Detalhes completos do pedido</li>
- *   <li>Lista de itens</li>
- *   <li>Informações de pagamento e risco</li>
- * </ul>
- */
-
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useOrder } from '../hooks/useOrder';
@@ -85,7 +74,6 @@ export const OrderDetailPage = () => {
     try {
       await refreshPaymentStatus(id);
     } catch (error) {
-      // Capturar erro para exibir na UI
       const apiError = error as ApiError;
       setRefreshError(apiError);
       console.error('Erro ao atualizar status do pagamento:', error);
@@ -142,7 +130,6 @@ export const OrderDetailPage = () => {
       )}
 
       <div className="space-y-6">
-        {/* Status e Risco */}
         <Card>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -164,7 +151,6 @@ export const OrderDetailPage = () => {
           </div>
         </Card>
 
-        {/* Informações do Cliente */}
         <Card>
           <h2 className="text-xl font-semibold mb-4">Cliente</h2>
           <div className="space-y-2">
@@ -183,7 +169,6 @@ export const OrderDetailPage = () => {
           </div>
         </Card>
 
-        {/* Itens do Pedido */}
         <Card>
           <h2 className="text-xl font-semibold mb-4">Itens do Pedido</h2>
           <div className="space-y-4">
@@ -214,7 +199,6 @@ export const OrderDetailPage = () => {
           </div>
         </Card>
 
-        {/* Informações Adicionais */}
         <Card>
           <h2 className="text-xl font-semibold mb-4">Informações Adicionais</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -242,4 +226,3 @@ export const OrderDetailPage = () => {
     </div>
   );
 };
-

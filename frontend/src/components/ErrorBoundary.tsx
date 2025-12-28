@@ -1,14 +1,3 @@
-/**
- * Error Boundary para capturar erros de renderização e exibir UI de fallback.
- * 
- * <h3>Responsabilidades:</h3>
- * <ul>
- *   <li>Captura erros de renderização em componentes filhos</li>
- *   <li>Exibe UI de fallback amigável</li>
- *   <li>Permite resetar o estado e tentar novamente</li>
- * </ul>
- */
-
 import { Component, ReactNode, ErrorInfo } from 'react';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -111,4 +100,3 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return this.props.children;
   }
 }
-

@@ -1,7 +1,3 @@
-/**
- * Componente Alert para exibir mensagens de sucesso, erro, aviso ou informação.
- */
-
 import { ReactNode } from 'react';
 import { cn } from '../../utils';
 
@@ -73,4 +69,3 @@ export const Alert = ({
     </div>
   );
 };
-

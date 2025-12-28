@@ -1,21 +1,3 @@
-/**
- * Tipos TypeScript compartilhados da aplicação.
- * 
- * <h3>Por que Centralizar Types?</h3>
- * <ul>
- *   <li><strong>Consistência:</strong> Tipos compartilhados entre componentes</li>
- *   <li><strong>Reutilização:</strong> Evita duplicação de definições</li>
- *   <li><strong>Manutenibilidade:</strong> Um lugar para atualizar tipos</li>
- * </ul>
- * 
- * <h3>Estrutura:</h3>
- * <p>Tipos baseados nos DTOs do backend para garantir compatibilidade.</p>
- */
-
-// ============================================================================
-// Enums
-// ============================================================================
-
 export enum OrderStatus {
   PENDING = 'PENDING',
   PAID = 'PAID',
@@ -28,10 +10,6 @@ export enum RiskLevel {
   HIGH = 'HIGH',
   PENDING = 'PENDING',
 }
-
-// ============================================================================
-// Order Item Types
-// ============================================================================
 
 export interface OrderItemRequest {
   productId: string;
@@ -47,10 +25,6 @@ export interface OrderItemResponse {
   unitPrice: number;
   subtotal: number;
 }
-
-// ============================================================================
-// Order Types
-// ============================================================================
 
 export interface CreateOrderRequest {
   customerId: string;
@@ -84,10 +58,6 @@ export interface CreateOrderResponse {
   errorMessage?: string;
 }
 
-// ============================================================================
-// API Error Types
-// ============================================================================
-
 export interface ApiError {
   message: string;
   status?: number;
@@ -96,12 +66,8 @@ export interface ApiError {
   details?: Record<string, string>;
   timestamp?: string;
   path?: string;
-  isBusinessError?: boolean; // true se for erro de negócio (saga falhou), false se for erro de validação
+  isBusinessError?: boolean;
 }
-
-// ============================================================================
-// Utility Types
-// ============================================================================
 
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 

@@ -1,15 +1,3 @@
-/**
- * Componente Input reutilizável.
- * 
- * <h3>Características:</h3>
- * <ul>
- *   <li>Label opcional</li>
- *   <li>Mensagem de erro</li>
- *   <li>Tipos de input (text, email, number, etc.)</li>
- *   <li>Acessibilidade completa</li>
- * </ul>
- */
-
 import { InputHTMLAttributes, forwardRef } from 'react';
 import { cn } from '../../utils';
 
@@ -73,4 +61,3 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 );
 
 Input.displayName = 'Input';
-

@@ -7,11 +7,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
-/**
- * Configuração do cliente HTTP para integração com OpenAI.
- * 
- * @author Marcelo Hernandes da Silva
- */
 @Configuration
 public class OpenAIConfig {
     
@@ -31,4 +26,3 @@ public class OpenAIConfig {
             .build();
     }
 }
-
