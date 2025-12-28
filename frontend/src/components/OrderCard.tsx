@@ -95,6 +95,7 @@ export const OrderCard = memo(OrderCardComponent, (prevProps, nextProps) => {
     prevProps.order.id === nextProps.order.id &&
     prevProps.order.status === nextProps.order.status &&
     prevProps.order.totalAmount === nextProps.order.totalAmount &&
+    prevProps.order.updatedAt === nextProps.order.updatedAt &&
     prevProps.onClick === nextProps.onClick
   );
 });

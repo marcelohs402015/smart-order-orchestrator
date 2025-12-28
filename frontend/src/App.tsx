@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
+import { ToastContainer } from './components/ui/Toast';
 import { DashboardPage } from './pages/DashboardPage';
 import { OrdersListPage } from './pages/OrdersListPage';
 import { CreateOrderPage } from './pages/CreateOrderPage';
@@ -19,6 +20,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>
+        <ToastContainer />
       </BrowserRouter>
     </ErrorBoundary>
   );

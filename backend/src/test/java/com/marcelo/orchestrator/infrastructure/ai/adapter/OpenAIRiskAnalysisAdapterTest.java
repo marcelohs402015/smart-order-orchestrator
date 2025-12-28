@@ -54,17 +54,22 @@ class OpenAIRiskAnalysisAdapterTest {
     @Mock
     private WebClient.ResponseSpec responseSpec;
     
-    @InjectMocks
+    @Mock
+    private java.util.concurrent.Executor virtualThreadExecutor;
+    
     private OpenAIRiskAnalysisAdapter adapter;
     
     private RiskAnalysisRequest testRequest;
     
     @BeforeEach
     void setUp() {
-        // Configurar propriedades via reflection (já que são @Value)
-        ReflectionTestUtils.setField(adapter, "model", "gpt-3.5-turbo");
-        ReflectionTestUtils.setField(adapter, "temperature", 0.0);
-        ReflectionTestUtils.setField(adapter, "maxTokens", 10);
+        adapter = new OpenAIRiskAnalysisAdapter(
+            openAIWebClient,
+            "gpt-3.5-turbo",
+            0.0,
+            10,
+            virtualThreadExecutor
+        );
         
         // Criar RiskAnalysisRequest de teste
         testRequest = new RiskAnalysisRequest(

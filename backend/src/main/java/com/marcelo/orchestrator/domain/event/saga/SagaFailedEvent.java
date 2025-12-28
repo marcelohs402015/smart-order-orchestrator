@@ -7,28 +7,6 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Evento publicado quando a saga falha.
- * 
- * <p>Implementa o padrão <strong>Domain Event</strong> e é publicado pelo
- * {@link com.marcelo.orchestrator.application.saga.OrderSagaOrchestrator}
- * quando algum step falha e a compensação é executada.</p>
- * 
- * <h3>Padrão: Domain Event</h3>
- * <p>Este evento indica que a saga falhou e foi compensada.
- * Consumidores devem reagir adequadamente (ex: notificar cliente,
- * liberar recursos reservados, etc.).</p>
- * 
- * <h3>Consumidores Típicos:</h3>
- * <ul>
- *   <li><strong>Notification Service:</strong> Envia email de falha ao cliente</li>
- *   <li><strong>Inventory Service:</strong> Libera estoque reservado</li>
- *   <li><strong>Analytics Service:</strong> Registra métrica de falha</li>
- *   <li><strong>Alerting Service:</strong> Envia alerta se taxa de falha alta</li>
- * </ul>
- * 
- * @author Marcelo
- */
 @Getter
 @Builder
 public class SagaFailedEvent implements DomainEvent {

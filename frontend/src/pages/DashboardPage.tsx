@@ -1,22 +1,34 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOrders } from '../hooks/useOrders';
-import { OrderStatus } from '../types';
+import { OrderStatus, OrderResponse } from '../types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { OrderCard } from '../components/OrderCard';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { Alert } from '../components/ui/Alert';
+import { ErrorDisplay } from '../components/ErrorDisplay';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { orders, loading, error, refetch, clearError } = useOrders();
 
-  const totalOrders = orders.length;
-  const paidOrders = orders.filter((o) => o.status === OrderStatus.PAID).length;
-  const pendingOrders = orders.filter((o) => o.status === OrderStatus.PENDING).length;
-  const failedPaymentOrders = orders.filter((o) => o.status === OrderStatus.PAYMENT_FAILED);
-  const failedPaymentCount = failedPaymentOrders.length;
-  const recentOrders = orders.slice(0, 5);
+  const { totalOrders, paidOrders, pendingOrders, failedPaymentOrders, failedPaymentCount, recentOrders } = useMemo(() => {
+    const total = orders.length;
+    const paid = orders.filter((o: OrderResponse) => o.status === OrderStatus.PAID).length;
+    const pending = orders.filter((o: OrderResponse) => o.status === OrderStatus.PENDING).length;
+    const failed = orders.filter((o: OrderResponse) => o.status === OrderStatus.PAYMENT_FAILED);
+    const failedCount = failed.length;
+    const recent = orders.slice(0, 5);
+
+    return {
+      totalOrders: total,
+      paidOrders: paid,
+      pendingOrders: pending,
+      failedPaymentOrders: failed,
+      failedPaymentCount: failedCount,
+      recentOrders: recent,
+    };
+  }, [orders]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -27,66 +39,13 @@ export const DashboardPage = () => {
         </p>
       </div>
 
-      {error && (
-        <Alert variant="error" onClose={clearError} className="mb-6">
-          <div>
-            <p className="font-semibold mb-1">Erro ao carregar dados</p>
-            <p>{error.message}</p>
-            {error.status === 500 && (
-              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded text-sm">
-                <p className="font-medium mb-2">O backend está respondendo, mas ocorreu um erro interno.</p>
-                <p className="mb-2 text-gray-700">Possíveis causas:</p>
-                <ul className="list-disc list-inside space-y-1 text-gray-700">
-                  <li>Banco de dados não está conectado ou configurado corretamente</li>
-                  <li>Erro na consulta ao banco de dados (verifique se as tabelas existem)</li>
-                  <li>Erro na conversão de dados (verifique os logs do backend)</li>
-                  <li>Problema na configuração do Spring Boot</li>
-                </ul>
-                <p className="mt-2 text-gray-600">
-                  <strong>Status:</strong> {error.status} | <strong>Path:</strong> {error.path || 'N/A'}
-                </p>
-                <p className="mt-2 text-xs text-gray-500">
-                  💡 Dica: Verifique os logs do backend em http://localhost:8080 para mais detalhes sobre o erro.
-                </p>
-                <div className="mt-3">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => refetch()}
-                    disabled={loading === 'loading'}
-                  >
-                    Tentar Novamente
-                  </Button>
-                </div>
-              </div>
-            )}
-            {error.details && Object.keys(error.details).length > 0 && (
-              <div className="mt-2 text-sm">
-                <p className="font-medium mb-1">Detalhes do erro:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  {Object.entries(error.details).map(([field, message]) => (
-                    <li key={field}>
-                      <strong>{field}:</strong> {message}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {error.status !== 500 && (
-              <div className="mt-3">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => refetch()}
-                  disabled={loading === 'loading'}
-                >
-                  Tentar Novamente
-                </Button>
-              </div>
-            )}
-          </div>
-        </Alert>
-      )}
+      <ErrorDisplay
+        error={error}
+        onRetry={() => refetch()}
+        onClose={clearError}
+        className="mb-6"
+        retryLabel="Tentar Novamente"
+      />
 
       {loading === 'loading' ? (
         <div className="flex items-center justify-center py-12">
@@ -141,7 +100,7 @@ export const DashboardPage = () => {
                 </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {failedPaymentOrders.slice(0, 3).map((order) => (
+                {failedPaymentOrders.slice(0, 3).map((order: OrderResponse) => (
                   <OrderCard
                     key={order.id}
                     order={order}
@@ -194,7 +153,7 @@ export const DashboardPage = () => {
               </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {recentOrders.map((order) => (
+                {recentOrders.map((order: OrderResponse) => (
                   <OrderCard
                     key={order.id}
                     order={order}

@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { ApiError } from '../types';
+import { logger } from '../utils/logger';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
@@ -13,13 +14,26 @@ export const apiClient: AxiosInstance = axios.create({
 
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    if (import.meta.env.DEV && config.data) {
-      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data);
-    }
-    
+      const logData: Record<string, unknown> = {
+        method: config.method?.toUpperCase(),
+        url: config.url,
+        baseURL: config.baseURL,
+      };
+
+      if (config.data) {
+        logData.data = config.data;
+      }
+
+      if (config.params) {
+        logData.params = config.params;
+      }
+
+      logger.log('API Request', logData);
+
     return config;
   },
   (error) => {
+    logger.error('API Request Error', error);
     return Promise.reject(error);
   }
 );
@@ -30,7 +44,7 @@ apiClient.interceptors.response.use(
   },
   (error: AxiosError) => {
     if (error.response?.status === 400) {
-      const data = error.response.data as any;
+      const data = error.response.data as Record<string, unknown>;
       if (data && typeof data === 'object' && 'success' in data && 'sagaExecutionId' in data) {
         return Promise.reject({
           isCreateOrderResponse: true,
@@ -46,20 +60,34 @@ apiClient.interceptors.response.use(
     };
 
     if (error.response) {
-      const data = error.response.data as any;
+      const data = error.response.data as Record<string, unknown>;
       apiError.status = error.response.status;
       apiError.error = data.error || error.response.statusText;
       
-      if (import.meta.env.DEV) {
-        console.error('[API Error]', {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          url: error.config?.url,
-          method: error.config?.method,
-          data: data,
-          requestData: error.config?.data,
-        });
+      const errorLog: Record<string, unknown> = {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        url: error.config?.url,
+        method: error.config?.method?.toUpperCase(),
+        timestamp: new Date().toISOString(),
+      };
+
+      if (data) {
+        errorLog.responseData = data;
       }
+
+      if (error.config?.data) {
+        try {
+          errorLog.requestData =
+            typeof error.config.data === 'string'
+              ? JSON.parse(error.config.data)
+              : error.config.data;
+        } catch {
+          errorLog.requestData = error.config.data;
+        }
+      }
+
+      logger.error('API Error', error, errorLog);
       
       if (error.response.status === 500) {
         apiError.message = data.message || 'Erro interno do servidor. O backend está respondendo, mas ocorreu um erro ao processar a requisição. Verifique os logs do backend e a configuração do banco de dados.';
@@ -83,7 +111,7 @@ apiClient.interceptors.response.use(
       }
       
       if (!apiError.details && data.errors && typeof data.errors === 'object') {
-        const errorsObj = data.errors as any;
+        const errorsObj = data.errors as Record<string, unknown>;
         if (Object.keys(errorsObj).length > 0) {
           apiError.details = {};
           Object.entries(errorsObj).forEach(([key, value]) => {

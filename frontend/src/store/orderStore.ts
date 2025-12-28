@@ -8,6 +8,7 @@ import {
   OrderStatus,
 } from '../types';
 import * as orderService from '../services/orderService';
+import { logger } from '../utils/logger';
 
 interface OrderState {
   orders: OrderResponse[];
@@ -27,6 +28,27 @@ interface OrderState {
   clearCurrentOrder: () => void;
 }
 
+const resetErrorState = () => ({
+  error: null,
+  validationErrors: null,
+});
+
+const resetLoadingState = () => ({
+  loading: 'loading' as LoadingState,
+  ...resetErrorState(),
+});
+
+const setSuccessState = () => ({
+  loading: 'success' as LoadingState,
+  ...resetErrorState(),
+});
+
+const setErrorState = (apiError: ApiError) => ({
+  loading: 'error' as LoadingState,
+  error: apiError,
+  validationErrors: apiError.details || null,
+});
+
 export const useOrderStore = create<OrderState>((set, get) => ({
   orders: [],
   currentOrder: null,
@@ -36,32 +58,26 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   validationErrors: null,
 
   fetchOrders: async (status?: OrderStatus) => {
-    set({ loading: 'loading', error: null, validationErrors: null });
+    set(resetLoadingState());
     try {
       const orders = await orderService.getAllOrders(status);
-      set({ orders, loading: 'success', error: null, validationErrors: null });
+      set({ orders, ...setSuccessState() });
     } catch (error) {
       const apiError = error as ApiError;
-      set({
-        loading: 'error',
-        error: apiError,
-        validationErrors: apiError.details || null,
-      });
+      set(setErrorState(apiError));
     }
   },
 
   fetchOrderById: async (id: string) => {
-    set({ loading: 'loading', error: null, currentOrder: null, validationErrors: null });
+    set({ ...resetLoadingState(), currentOrder: null });
     try {
       const order = await orderService.getOrderById(id);
-      set({ currentOrder: order, loading: 'success', error: null, validationErrors: null });
+      set({ currentOrder: order, ...setSuccessState() });
     } catch (error) {
       const apiError = error as ApiError;
       set({
-        loading: 'error',
-        error: apiError,
         currentOrder: null,
-        validationErrors: apiError.details || null,
+        ...setErrorState(apiError),
       });
     }
   },
@@ -71,12 +87,12 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       const failedOrders = await orderService.getAllOrders(OrderStatus.PAYMENT_FAILED);
       set({ failedPaymentOrders: failedOrders });
     } catch (error) {
-      console.warn('Erro ao buscar pedidos com falha de pagamento:', error);
+      logger.warn('Erro ao buscar pedidos com falha de pagamento', { error });
     }
   },
 
   createOrder: async (request: CreateOrderRequest) => {
-    set({ loading: 'loading', error: null, validationErrors: null });
+    set(resetLoadingState());
     try {
       const response = await orderService.createOrder(request);
       
@@ -85,9 +101,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         set({
           orders: [response.order, ...currentOrders],
           currentOrder: response.order,
-          loading: 'success',
-          error: null,
-          validationErrors: null,
+          ...setSuccessState(),
         });
       } else if (response.sagaExecutionId && !response.success) {
         set({
@@ -113,19 +127,13 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       return response;
     } catch (error) {
       const apiError = error as ApiError;
-      const validationErrors = apiError.details || null;
-      
-      set({
-        loading: 'error',
-        error: apiError,
-        validationErrors,
-      });
+      set(setErrorState(apiError));
       throw error;
     }
   },
 
   refreshPaymentStatus: async (orderId: string) => {
-    set({ error: null, validationErrors: null });
+    set(resetErrorState());
     try {
       const updatedOrder = await orderService.refreshPaymentStatus(orderId);
       
@@ -141,21 +149,17 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       
       set({
         orders: updatedOrders,
-        error: null,
-        validationErrors: null,
+        ...resetErrorState(),
       });
     } catch (error) {
       const apiError = error as ApiError;
-      set({
-        error: apiError,
-        validationErrors: apiError.details || null,
-      });
+      set(setErrorState(apiError));
       throw error;
     }
   },
 
   clearError: () => {
-    set({ error: null, validationErrors: null });
+    set(resetErrorState());
   },
 
   clearValidationErrors: () => {

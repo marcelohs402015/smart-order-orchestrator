@@ -4,12 +4,15 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useOrderStore } from '../store/orderStore';
-import { CreateOrderRequest } from '../types';
+import { CreateOrderRequest, ApiError } from '../types';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { Alert } from '../components/ui/Alert';
-import { generateId, isValidUUID } from '../utils';
+import { ValidationErrorsDisplay } from '../components/ValidationErrorsDisplay';
+import { generateId } from '../utils';
+import { logger } from '../utils/logger';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 
 const orderItemSchema = z.object({
   productId: z
@@ -48,6 +51,7 @@ type CreateOrderFormData = z.infer<typeof createOrderSchema>;
 export const CreateOrderPage = () => {
   const navigate = useNavigate();
   const { createOrder, loading, error, validationErrors, clearError, clearValidationErrors } = useOrderStore();
+  const { handleError, handleSuccess } = useErrorHandler();
   const [showSuccess, setShowSuccess] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -95,28 +99,6 @@ export const CreateOrderPage = () => {
     setIsProcessing(false);
 
     try {
-      if (!isValidUUID(data.customerId)) {
-        setError('customerId', {
-          type: 'manual',
-          message: 'ID do cliente deve ser um UUID válido',
-        });
-        return;
-      }
-      
-      const invalidProductIds = data.items
-        .map((item, index) => ({ item, index }))
-        .filter(({ item }) => item.productId && !isValidUUID(item.productId));
-      
-      if (invalidProductIds.length > 0) {
-        invalidProductIds.forEach(({ index }) => {
-          setError(`items.${index}.productId`, {
-            type: 'manual',
-            message: 'ID do produto deve ser um UUID válido',
-          });
-        });
-        return;
-      }
-      
       const request: CreateOrderRequest = {
         customerId: data.customerId.trim(),
         customerName: data.customerName.trim(),
@@ -144,32 +126,25 @@ export const CreateOrderPage = () => {
         return;
       }
 
-      console.log('📤 Enviando requisição:', {
+      logger.log('Enviando requisição de criação de pedido', {
         url: '/api/v1/orders',
         method: 'POST',
-        payload: JSON.stringify(request, null, 2),
         customerId: request.customerId,
         itemsCount: request.items.length,
-        items: request.items.map(item => ({
-          productId: item.productId,
-          productName: item.productName,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          unitPriceType: typeof item.unitPrice,
-        })),
       });
 
       const response = await createOrder(request);
 
       if (response.success && response.order) {
         setShowSuccess(true);
+        handleSuccess('Pedido criado com sucesso!');
         reset();
         setTimeout(() => {
           navigate('/orders');
         }, 2000);
       } else if (response.sagaExecutionId && !response.success) {
         if (response.errorMessage) {
-          console.warn('⚠️ Saga falhou:', {
+          logger.warn('Saga falhou', {
             sagaExecutionId: response.sagaExecutionId,
             errorMessage: response.errorMessage,
           });
@@ -178,26 +153,11 @@ export const CreateOrderPage = () => {
         }
       }
     } catch (err) {
-      console.error('❌ Erro ao criar pedido:', err);
-      
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as any;
-        console.error('📋 Detalhes do erro do backend:', {
-          status: axiosError.response?.status,
-          statusText: axiosError.response?.statusText,
-          error: axiosError.response?.data?.error,
-          message: axiosError.response?.data?.message,
-          details: axiosError.response?.data?.details,
-          requestPayload: axiosError.config?.data ? JSON.parse(axiosError.config.data) : null,
-        });
-        
-        if (axiosError.response?.data?.details) {
-          console.error('🔍 Erros de validação por campo:');
-          Object.entries(axiosError.response.data.details).forEach(([field, message]) => {
-            console.error(`  - ${field}: ${message}`);
-          });
-        }
-      }
+      const apiError = err as ApiError;
+      handleError(apiError, {
+        showNotification: true,
+        notificationTitle: 'Erro ao criar pedido',
+      });
     }
   };
 
@@ -251,48 +211,9 @@ export const CreateOrderPage = () => {
                 </p>
               </div>
             )}
-            {(validationErrors && Object.keys(validationErrors).length > 0) || (error.details && Object.keys(error.details).length > 0 && !error.isBusinessError) ? (
-              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded text-sm">
-                <p className="font-medium mb-2">Erros de validação do backend:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  {Object.entries(validationErrors || error.details || {}).map(([field, message]) => {
-                    const fieldNameMap: Record<string, string> = {
-                      'customerId': 'ID do Cliente',
-                      'customerName': 'Nome do Cliente',
-                      'customerEmail': 'Email do Cliente',
-                      'items': 'Itens do Pedido',
-                      'paymentMethod': 'Método de Pagamento',
-                      'currency': 'Moeda',
-                      'idempotencyKey': 'Chave de Idempotência',
-                    };
-                    
-                    let displayField = field;
-                    if (field.startsWith('items[')) {
-                      const match = field.match(/items\[(\d+)\]\.(.+)/);
-                      if (match) {
-                        const index = parseInt(match[1]) + 1;
-                        const itemField = match[2];
-                        const itemFieldMap: Record<string, string> = {
-                          'productId': 'ID do Produto',
-                          'productName': 'Nome do Produto',
-                          'quantity': 'Quantidade',
-                          'unitPrice': 'Preço Unitário',
-                        };
-                        displayField = `Item ${index} - ${itemFieldMap[itemField] || itemField}`;
-                      }
-                    } else {
-                      displayField = fieldNameMap[field] || field;
-                    }
-                    
-                    return (
-                      <li key={field} className="text-red-800">
-                        <strong>{displayField}:</strong> {message}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ) : null}
+            <ValidationErrorsDisplay
+              errors={(validationErrors || error.details || {}) as Record<string, string>}
+            />
             {error.status === 400 && !validationErrors && !error.details && (
               <div className="mt-2 text-sm text-gray-600">
                 <p>💡 Dica: Verifique o console do navegador (F12) para ver os detalhes completos do erro.</p>

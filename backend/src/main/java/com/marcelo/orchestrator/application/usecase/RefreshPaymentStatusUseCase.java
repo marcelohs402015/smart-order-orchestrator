@@ -13,10 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
-/**
- * Use case responsible for refreshing the payment status of an existing order
- * by querying the external payment gateway (AbacatePay).
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -26,12 +22,6 @@ public class RefreshPaymentStatusUseCase {
     private final PaymentGatewayPort paymentGatewayPort;
     private final EventPublisherPort eventPublisher;
 
-    /**
-     * Refreshes payment status for a given order.
-     *
-     * @param orderId order identifier
-     * @return updated order
-     */
     public Order execute(UUID orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException(orderId));
@@ -76,11 +66,6 @@ public class RefreshPaymentStatusUseCase {
         return updatedOrder;
     }
     
-    /**
-     * Publica PaymentProcessedEvent no Kafka quando status muda para PAID.
-     * 
-     * <p>Padrão: Fail-Safe - Se publicação falhar, não interrompe fluxo principal.</p>
-     */
     private void publishPaymentProcessedEvent(Order order) {
         try {
             PaymentProcessedEvent event = PaymentProcessedEvent.fromOrder(order);

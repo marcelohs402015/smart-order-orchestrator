@@ -6,15 +6,6 @@ import lombok.Getter;
 
 import java.util.UUID;
 
-/**
- * Command para atualização de status de pedido.
- * 
- * <p>Contém dados necessários para atualizar status de um pedido.</p>
- * 
- * @param orderId ID do pedido a atualizar
- * @param newStatus Novo status desejado
- * @author Marcelo
- */
 @Getter
 @Builder
 public class UpdateOrderStatusCommand {

@@ -14,38 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Use Case para processamento de pagamento.
- * 
- * <p>Orquestra o fluxo de pagamento de um pedido, integrando com gateway externo
- * e atualizando o status do pedido conforme o resultado.</p>
- * 
- * <h3>Responsabilidades:</h3>
- * <ul>
- *   <li>Buscar pedido pelo ID</li>
- *   <li>Validar que pedido está em estado válido para pagamento</li>
- *   <li>Chamar gateway de pagamento (com Circuit Breaker via Resilience4j)</li>
- *   <li>Atualizar status do pedido baseado no resultado</li>
- *   <li>Notificar sobre resultado do pagamento</li>
- * </ul>
- * 
- * <h3>Resiliência:</h3>
- * <p>A chamada ao PaymentGatewayPort será protegida por Circuit Breaker
- * configurado na camada Infrastructure. Se gateway estiver indisponível,
- * o Circuit Breaker abre e retorna falha rapidamente.</p>
- * 
- * <h3>Fluxo:</h3>
- * <ol>
- *   <li>Valida que pedido existe e está PENDING</li>
- *   <li>Cria PaymentRequest com dados do pedido</li>
- *   <li>Chama PaymentGatewayPort (pode falhar - Circuit Breaker protege)</li>
- *   <li>Se sucesso: marca pedido como PAID</li>
- *   <li>Se falha: marca pedido como PAYMENT_FAILED</li>
- *   <li>Persiste mudança e notifica</li>
- * </ol>
- * 
- * @author Marcelo
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -55,18 +23,6 @@ public class ProcessPaymentUseCase {
     private final PaymentGatewayPort paymentGateway;
     private final NotificationPort notificationPort;
     
-    /**
-     * Processa pagamento de um pedido.
-     * 
-     * <p><strong>Padrão Saga:</strong> Usa REQUIRES_NEW para garantir transação
-     * independente que faz commit imediato, permitindo compensação manual se
-     * passos subsequentes falharem.</p>
-     * 
-     * @param command Command com dados do pagamento
-     * @return Pedido atualizado com resultado do pagamento
-     * @throws OrderNotFoundException se pedido não encontrado
-     * @throws IllegalStateException se estado inválido para pagamento
-     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Order execute(ProcessPaymentCommand command) {
         log.info("Processing payment for order: {}", command.getOrderId());

@@ -1,10 +1,11 @@
 import { useEffect, useCallback } from 'react';
 import { useOrderStore } from '../store/orderStore';
+import { OrderResponse, LoadingState, ApiError } from '../types';
 
 interface UseOrderReturn {
-  order: ReturnType<typeof useOrderStore>['currentOrder'];
-  loading: ReturnType<typeof useOrderStore>['loading'];
-  error: ReturnType<typeof useOrderStore>['error'];
+  order: OrderResponse | null;
+  loading: LoadingState;
+  error: ApiError | null;
   refetch: (id: string) => Promise<void>;
   refreshPaymentStatus: (orderId: string) => Promise<void>;
   clearError: () => void;

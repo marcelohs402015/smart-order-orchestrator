@@ -25,60 +25,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Orquestrador da saga de pedidos.
- * 
- * <p>Implementa o padrão <strong>Saga Pattern (Orchestration)</strong> para
- * coordenar múltiplas operações em uma transação distribuída.</p>
- * 
- * <h3>Responsabilidades:</h3>
- * <ul>
- *   <li>Orquestrar os 3 passos da saga (Criar Pedido → Processar Pagamento → Analisar Risco)</li>
- *   <li>Rastrear estado de cada passo para observabilidade</li>
- *   <li>Executar compensação automática em caso de falha</li>
- *   <li>Persistir histórico completo de execução</li>
- * </ul>
- * 
- * <h3>Por que Saga Pattern?</h3>
- * <ul>
- *   <li><strong>Consistência Eventual:</strong> Garante que todas as operações sejam executadas na ordem correta</li>
- *   <li><strong>Compensação:</strong> Rollback automático se algum passo falhar</li>
- *   <li><strong>Observabilidade:</strong> Rastreamento completo de cada execução</li>
- *   <li><strong>Padrão Enterprise:</strong> Usado em microserviços e sistemas distribuídos</li>
- * </ul>
- * 
- * <h3>Fluxo da Saga:</h3>
- * <ol>
- *   <li><strong>Step 1:</strong> Criar pedido (status: PENDING)</li>
- *   <li><strong>Step 2:</strong> Processar pagamento (status: PAID ou PAYMENT_FAILED)</li>
- *   <li><strong>Step 3:</strong> Analisar risco (apenas se pagamento sucedeu)</li>
- *   <li><strong>Compensação:</strong> Se pagamento falhar, cancelar pedido</li>
- * </ol>
- * 
- * <h3>Observabilidade:</h3>
- * <p>Cada passo é rastreado e persistido, permitindo:
- * - Consultar histórico completo de execuções
- * - Identificar onde falhou
- * - Calcular métricas (taxa de sucesso, tempo médio)
- * - Debugging em produção</p>
- * 
- * <h3>Padrão: Event-Driven Architecture</h3>
- * <p>Este orchestrator publica eventos em cada step da saga, permitindo que outros serviços
- * reajam de forma assíncrona e desacoplada:</p>
- * <ul>
- *   <li><strong>OrderCreatedEvent:</strong> Publicado após Step 1 (Create Order)</li>
- *   <li><strong>PaymentProcessedEvent:</strong> Publicado após Step 2 (Process Payment)</li>
- *   <li><strong>SagaCompletedEvent:</strong> Publicado quando saga completa com sucesso</li>
- *   <li><strong>SagaFailedEvent:</strong> Publicado quando saga falha e é compensada</li>
- * </ul>
- * 
- * <h3>Padrão: Factory Pattern para Message Brokers</h3>
- * <p>Os eventos são publicados via {@link EventPublisherPort}, que é injetado usando
- * {@link com.marcelo.orchestrator.infrastructure.messaging.factory.EventPublisherFactory}.
- * Isso permite trocar message broker (Kafka, Pub/Sub, RabbitMQ) via configuração sem alterar código.</p>
- * 
- * @author Marcelo
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -89,43 +35,9 @@ public class OrderSagaOrchestrator {
     private final AnalyzeRiskUseCase analyzeRiskUseCase;
     private final OrderRepositoryPort orderRepository;
     private final SagaExecutionRepositoryPort sagaRepository;
-    
-    /**
-     * Port para publicação de eventos (injetado via Factory Pattern).
-     * 
-     * <p>Padrão: Dependency Injection - Spring injeta a implementação correta
-     * baseada na configuração (Kafka, Pub/Sub, RabbitMQ, ou In-Memory).</p>
-     * 
-     * <p>Padrão: Port (Hexagonal Architecture) - Interface do domínio que permite
-     * publicar eventos sem conhecer detalhes do message broker.</p>
-     */
+
     private final EventPublisherPort eventPublisher;
     
-    /**
-     * Executa a saga completa de criação de pedido.
-     * 
-     * <p>Orquestra os 3 passos sequencialmente, rastreando cada um
-     * e executando compensação se necessário.</p>
-     * 
-     * <h3>Padrão: Idempotência</h3>
-     * <p>Se uma saga com a mesma {@code idempotencyKey} já foi executada,
-     * retorna o resultado anterior ao invés de criar novo pedido. Isso previne
-     * duplicação em caso de retry, timeout ou usuário clicando várias vezes.</p>
-     * 
-     * <h3>Gerenciamento de Transações (Saga Pattern):</h3>
-     * <p>Este método NÃO usa @Transactional porque segue os princípios do Saga Pattern:
-     * - Cada passo (use case) é uma transação independente que faz commit imediato
-     * - Se um passo falhar, os anteriores já foram commitados (não há rollback de transação)
-     * - Compensação é executada manualmente (não via rollback de transação)
-     * - Estado da saga é persistido em transações separadas para rastreamento
-     * 
-     * <p>Isso evita o problema de "rollback-only" que ocorre com transações aninhadas
-     * e garante que cada passo seja atomicamente commitado, permitindo compensação
-     * manual se necessário.</p>
-     * 
-     * @param command Command com todos os dados necessários (incluindo idempotencyKey)
-     * @return Resultado da saga (sucesso, falha ou em progresso)
-     */
     public OrderSagaResult execute(OrderSagaCommand command) {
         // Padrão: Idempotência - Verificar se saga já foi executada
         if (command.getIdempotencyKey() != null && !command.getIdempotencyKey().isBlank()) {
@@ -213,12 +125,6 @@ public class OrderSagaOrchestrator {
         }
     }
     
-    /**
-     * Step 1: Criar pedido.
-     * 
-     * <p>Padrão: Event-Driven Architecture - Após criar pedido com sucesso,
-     * publica OrderCreatedEvent para notificar outros serviços.</p>
-     */
     private Order executeStep1_CreateOrder(OrderSagaCommand command, SagaExecutionRepositoryPort.SagaExecution saga) {
         SagaExecutionRepositoryPort.SagaExecution updatedSaga = startStep(saga, "ORDER_CREATED");
         
@@ -243,13 +149,7 @@ public class OrderSagaOrchestrator {
             throw new DomainException("Failed to create order: " + e.getMessage(), e);
         }
     }
-    
-    /**
-     * Step 2: Processar pagamento.
-     * 
-     * <p>Padrão: Event-Driven Architecture - Após processar pagamento,
-     * publica PaymentProcessedEvent (sucesso ou falha) para notificar outros serviços.</p>
-     */
+
     private Order executeStep2_ProcessPayment(OrderSagaCommand command, Order order, SagaExecutionRepositoryPort.SagaExecution saga) {
         SagaExecutionRepositoryPort.SagaExecution updatedSaga = startStep(saga, "PAYMENT_PROCESSED");
         
@@ -279,9 +179,6 @@ public class OrderSagaOrchestrator {
         }
     }
     
-    /**
-     * Step 3: Analisar risco.
-     */
     private Order executeStep3_AnalyzeRisk(OrderSagaCommand command, Order paidOrder, SagaExecutionRepositoryPort.SagaExecution saga) {
         SagaExecutionRepositoryPort.SagaExecution updatedSaga = startStep(saga, "RISK_ANALYZED");
         
@@ -303,15 +200,6 @@ public class OrderSagaOrchestrator {
         }
     }
     
-    /**
-     * Compensa a saga em caso de falha.
-     * 
-     * <p>Se o pedido foi criado mas pagamento falhou, mantém o status PAYMENT_FAILED
-     * para que o frontend possa identificar corretamente a causa da falha.</p>
-     * 
-     * <p>Padrão: Event-Driven Architecture - Após compensação,
-     * publica SagaFailedEvent para notificar outros serviços sobre a falha.</p>
-     */
     @Transactional
     private SagaExecutionRepositoryPort.SagaExecution compensate(
             SagaExecutionRepositoryPort.SagaExecution saga, Order order, String reason) {
@@ -341,16 +229,6 @@ public class OrderSagaOrchestrator {
         return updatedSaga;
     }
     
-    /**
-     * Compensa o pedido em caso de falha.
-     * 
-     * <p>Se o pedido existe e não foi pago, garantir que status está correto:
-     * - Se já é PAYMENT_FAILED, manter (não mudar para CANCELED)
-     * - Se é PENDING, pode mudar para CANCELED (outros tipos de falha)</p>
-     * 
-     * @param order Pedido a compensar
-     * @return true se compensação foi executada, false caso contrário
-     */
     private boolean compensateOrder(Order order) {
         if (order == null || order.isPaid()) {
             return false;
@@ -378,11 +256,6 @@ public class OrderSagaOrchestrator {
         }
     }
     
-    /**
-     * Publica OrderCreatedEvent após Step 1.
-     * 
-     * <p>Padrão: Fail-Safe - Se publicação falhar, não interrompe fluxo principal.</p>
-     */
     private void publishOrderCreatedEvent(Order order, UUID sagaId) {
         try {
             OrderCreatedEvent event = OrderCreatedEvent.from(order, sagaId);
@@ -394,9 +267,7 @@ public class OrderSagaOrchestrator {
         }
     }
     
-    /**
-     * Publica PaymentProcessedEvent após Step 2.
-     */
+
     private void publishPaymentProcessedEvent(Order order, UUID sagaId) {
         try {
             PaymentProcessedEvent event = PaymentProcessedEvent.from(order, sagaId);
@@ -407,9 +278,7 @@ public class OrderSagaOrchestrator {
         }
     }
     
-    /**
-     * Publica SagaCompletedEvent quando saga completa com sucesso.
-     */
+
     private void publishSagaCompletedEvent(SagaExecutionRepositoryPort.SagaExecution saga, Order order) {
         try {
             SagaCompletedEvent event = SagaCompletedEvent.from(order, saga.id(), saga.durationMs());
@@ -420,9 +289,7 @@ public class OrderSagaOrchestrator {
         }
     }
     
-    /**
-     * Publica SagaFailedEvent quando saga falha e é compensada.
-     */
+
     private void publishSagaFailedEvent(SagaExecutionRepositoryPort.SagaExecution saga, Order order, String reason, 
                                         String failedStep, boolean compensated) {
         try {
@@ -435,19 +302,7 @@ public class OrderSagaOrchestrator {
         }
     }
     
-    /**
-     * Inicia uma nova execução de saga de forma segura (trata race conditions).
-     * 
-     * <p>Padrão: Idempotência - Salva a idempotencyKey na saga para
-     * permitir verificação posterior de duplicatas.</p>
-     * 
-     * <p><strong>Race Condition Protection:</strong> Se duas requisições com a mesma
-     * idempotencyKey chegarem simultaneamente, apenas uma criará a saga. A outra
-     * detectará a constraint violation e retornará a saga existente.</p>
-     * 
-     * @param idempotencyKey Chave de idempotência (pode ser null)
-     * @return Saga criada e persistida, ou saga existente se já foi criada por outra thread
-     */
+
     @Transactional
     private SagaExecutionRepositoryPort.SagaExecution startSagaSafely(String idempotencyKey) {
         try {
@@ -485,21 +340,13 @@ public class OrderSagaOrchestrator {
         }
     }
     
-    /**
-     * Inicia uma nova execução de saga (método interno - use startSagaSafely para proteção contra race conditions).
-     * 
-     * @deprecated Use {@link #startSagaSafely(String)} instead for race condition protection
-     */
     @Deprecated
     @Transactional
     private SagaExecutionRepositoryPort.SagaExecution startSaga(String idempotencyKey) {
         return startSagaSafely(idempotencyKey);
     }
     
-    /**
-     * Marca saga como concluída.
-     */
-    @Transactional
+     @Transactional
     private SagaExecutionRepositoryPort.SagaExecution completeSaga(
             SagaExecutionRepositoryPort.SagaExecution saga, Order order) {
         LocalDateTime completedAt = LocalDateTime.now();
@@ -527,9 +374,6 @@ public class OrderSagaOrchestrator {
         return saved;
     }
     
-    /**
-     * Inicia um passo da saga.
-     */
     @Transactional
     private SagaExecutionRepositoryPort.SagaExecution startStep(
             SagaExecutionRepositoryPort.SagaExecution saga, String stepName) {
@@ -566,9 +410,6 @@ public class OrderSagaOrchestrator {
         return sagaRepository.save(updatedSaga);
     }
     
-    /**
-     * Completa um passo da saga.
-     */
     @Transactional
     private SagaExecutionRepositoryPort.SagaExecution completeStep(
             SagaExecutionRepositoryPort.SagaExecution saga, String stepName, 
@@ -616,9 +457,6 @@ public class OrderSagaOrchestrator {
         return sagaRepository.save(updatedSaga);
     }
     
-    /**
-     * Atualiza o ID do pedido na saga.
-     */
     @Transactional
     private SagaExecutionRepositoryPort.SagaExecution updateSagaOrderId(
             SagaExecutionRepositoryPort.SagaExecution saga, UUID orderId) {
@@ -637,9 +475,6 @@ public class OrderSagaOrchestrator {
         return sagaRepository.save(updatedSaga);
     }
     
-    /**
-     * Atualiza o status da saga.
-     */
     @Transactional
     private SagaExecutionRepositoryPort.SagaExecution updateSagaStatus(
             SagaExecutionRepositoryPort.SagaExecution saga, 

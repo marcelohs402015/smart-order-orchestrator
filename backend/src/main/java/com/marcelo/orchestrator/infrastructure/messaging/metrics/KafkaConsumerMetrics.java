@@ -3,12 +3,10 @@ package com.marcelo.orchestrator.infrastructure.messaging.metrics;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 
-@Slf4j
 @Component
 public class KafkaConsumerMetrics {
 
@@ -44,9 +42,6 @@ public class KafkaConsumerMetrics {
                 .tag(PARTITION_TAG, String.valueOf(partition))
                 .register(meterRegistry)
                 .increment();
-
-        log.debug("Recorded Kafka message consumption: topic={}, eventType={}, partition={}", 
-                topic, eventType, partition);
     }
 
     public void recordProcessingTime(String topic, String eventType, Duration duration) {
@@ -56,9 +51,6 @@ public class KafkaConsumerMetrics {
                 .tag(EVENT_TYPE_TAG, eventType != null ? eventType : "unknown")
                 .register(meterRegistry)
                 .record(duration);
-
-        log.debug("Recorded Kafka processing time: topic={}, eventType={}, duration={}ms", 
-                topic, eventType, duration.toMillis());
     }
 
     public void recordSuccess(String topic, String eventType) {
@@ -80,8 +72,5 @@ public class KafkaConsumerMetrics {
                 .tag("error_type", error.getClass().getSimpleName())
                 .register(meterRegistry)
                 .increment();
-
-        log.warn("Recorded Kafka processing error: topic={}, eventType={}, error={}", 
-                topic, eventType, error.getMessage());
     }
 }

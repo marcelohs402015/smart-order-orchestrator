@@ -5,8 +5,9 @@ import { formatCurrency, formatDate, getOrderStatusInfo, getRiskLevelInfo } from
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { Alert } from '../components/ui/Alert';
-import { ApiError } from '../types';
+import { ErrorDisplay } from '../components/ErrorDisplay';
+import { ApiError, OrderItemResponse } from '../types';
+import { logger } from '../utils/logger';
 
 export const OrderDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -30,28 +31,13 @@ export const OrderDetailPage = () => {
   }
 
   if (error || !currentOrder) {
-    const isNotFound = error?.status === 404;
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <Alert variant="error" onClose={clearError}>
-          <div>
-            <p className="font-semibold mb-1">
-              {isNotFound ? 'Pedido não encontrado' : 'Erro ao carregar pedido'}
-            </p>
-            <p>{error?.message || 'Pedido não encontrado'}</p>
-            {error?.details && Object.keys(error.details).length > 0 && (
-              <div className="mt-2 text-sm">
-                <ul className="list-disc list-inside space-y-1">
-                  {Object.entries(error.details).map(([field, message]) => (
-                    <li key={field}>
-                      <strong>{field}:</strong> {message}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </Alert>
+        <ErrorDisplay
+          error={error}
+          onClose={clearError}
+          className="mb-6"
+        />
         <div className="mt-6">
           <Button onClick={() => navigate('/orders')}>
             Voltar para Lista
@@ -76,7 +62,7 @@ export const OrderDetailPage = () => {
     } catch (error) {
       const apiError = error as ApiError;
       setRefreshError(apiError);
-      console.error('Erro ao atualizar status do pagamento:', error);
+      logger.error('Erro ao atualizar status do pagamento', error);
     } finally {
       setIsRefreshingPayment(false);
     }
@@ -110,23 +96,11 @@ export const OrderDetailPage = () => {
       </div>
 
       {refreshError && refreshError.status !== 404 && (
-        <Alert variant="error" onClose={() => setRefreshError(null)} className="mb-6">
-          <div>
-            <p className="font-semibold mb-1">Erro ao atualizar status</p>
-            <p>{refreshError.message || 'Erro desconhecido'}</p>
-            {refreshError.details && Object.keys(refreshError.details).length > 0 && (
-              <div className="mt-2 text-sm">
-                <ul className="list-disc list-inside space-y-1">
-                  {Object.entries(refreshError.details).map(([field, message]) => (
-                    <li key={field}>
-                      <strong>{field}:</strong> {String(message)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </Alert>
+        <ErrorDisplay
+          error={refreshError}
+          onClose={() => setRefreshError(null)}
+          className="mb-6"
+        />
       )}
 
       <div className="space-y-6">
@@ -172,7 +146,7 @@ export const OrderDetailPage = () => {
         <Card>
           <h2 className="text-xl font-semibold mb-4">Itens do Pedido</h2>
           <div className="space-y-4">
-            {currentOrder.items.map((item, index) => (
+            {currentOrder.items.map((item: OrderItemResponse, index: number) => (
               <div
                 key={index}
                 className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"

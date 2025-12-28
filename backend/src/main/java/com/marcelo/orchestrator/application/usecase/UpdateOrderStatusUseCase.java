@@ -9,35 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Use Case para atualização de status de pedido.
- * 
- * <p>Orquestra a mudança de status de um pedido, validando transições
- * permitidas e notificando sobre a mudança.</p>
- * 
- * <h3>Responsabilidades:</h3>
- * <ul>
- *   <li>Buscar pedido pelo ID</li>
- *   <li>Validar transição de status (State Machine no domínio)</li>
- *   <li>Atualizar status do pedido</li>
- *   <li>Persistir mudança</li>
- *   <li>Notificar sobre mudança de status</li>
- * </ul>
- * 
- * <h3>Validação:</h3>
- * <p>A validação de transição é feita pela entidade Order usando o enum OrderStatus.
- * Isso garante que regras de negócio ficam no domínio, não no Use Case.</p>
- * 
- * <h3>Fluxo:</h3>
- * <ol>
- *   <li>Busca pedido</li>
- *   <li>Chama order.updateStatus() (validação no domínio)</li>
- *   <li>Persiste mudança</li>
- *   <li>Notifica sobre mudança</li>
- * </ol>
- * 
- * @author Marcelo
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor

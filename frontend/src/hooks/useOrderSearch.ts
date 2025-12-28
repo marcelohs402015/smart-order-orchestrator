@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { getOrderByNumber } from '../services/orderService';
 import { OrderResponse, ApiError } from '../types';
+import { useErrorHandler } from './useErrorHandler';
 
 interface UseOrderSearchReturn {
   searchResult: OrderResponse | null;
@@ -14,6 +15,7 @@ export const useOrderSearch = (): UseOrderSearchReturn => {
   const [searchResult, setSearchResult] = useState<OrderResponse | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const { handleError } = useErrorHandler();
 
   const searchByNumber = useCallback(async (orderNumber: string) => {
     if (!orderNumber.trim()) {
@@ -31,6 +33,11 @@ export const useOrderSearch = (): UseOrderSearchReturn => {
       setSearchResult(order);
     } catch (err) {
       const apiError = err as ApiError;
+      handleError(apiError, {
+        showNotification: true,
+        notificationTitle: 'Erro ao buscar pedido',
+      });
+      
       if (apiError.status === 404) {
         setSearchError('Pedido não encontrado');
       } else {
@@ -40,7 +47,7 @@ export const useOrderSearch = (): UseOrderSearchReturn => {
     } finally {
       setSearchLoading(false);
     }
-  }, []);
+  }, [handleError]);
 
   const clearSearch = useCallback(() => {
     setSearchResult(null);

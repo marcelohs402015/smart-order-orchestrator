@@ -140,6 +140,12 @@
             <version>2.6.0</version>
         </dependency>
         
+        <!-- Spring AOP: AspectJ para concerns transversais (logging, métricas, tratamento de erro) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+        
         <!-- Spring Boot Test: Framework de testes, MockMvc, TestContainers support -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

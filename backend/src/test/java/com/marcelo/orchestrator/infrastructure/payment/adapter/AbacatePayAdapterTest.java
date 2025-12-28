@@ -54,15 +54,19 @@ class AbacatePayAdapterTest {
     @Mock
     private WebClient.ResponseSpec responseSpec;
     
-    @InjectMocks
+    @Mock
+    private java.util.concurrent.Executor virtualThreadExecutor;
+    
     private AbacatePayAdapter adapter;
     
     private PaymentRequest testPaymentRequest;
     
     @BeforeEach
     void setUp() {
-        // Configurar base URL via reflection (já que é @Value)
-        ReflectionTestUtils.setField(adapter, "baseUrl", "https://api.abacatepay.com/v1");
+        adapter = new AbacatePayAdapter(
+            abacatePayWebClient,
+            virtualThreadExecutor
+        );
         
         // Criar PaymentRequest de teste
         testPaymentRequest = new PaymentRequest(

@@ -7,9 +7,9 @@ import { OrderCard } from '../components/OrderCard';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { Alert } from '../components/ui/Alert';
+import { ErrorDisplay } from '../components/ErrorDisplay';
 import { Card } from '../components/ui/Card';
-import { OrderStatus } from '../types';
+import { OrderStatus, OrderResponse } from '../types';
 
 type StatusFilter = 'ALL' | OrderStatus;
 
@@ -73,72 +73,16 @@ export const OrdersListPage = () => {
         </Button>
       </div>
 
-      {error && (
-        <Alert variant="error" onClose={clearError} className="mb-6">
-          <div>
-            <p className="font-semibold mb-1">Erro ao carregar pedidos</p>
-            <p>{error.message}</p>
-            {error.status === 500 && (
-              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded text-sm">
-                <p className="font-medium mb-2">O backend está respondendo, mas ocorreu um erro interno.</p>
-                <p className="mb-2 text-gray-700">Possíveis causas:</p>
-                <ul className="list-disc list-inside space-y-1 text-gray-700">
-                  <li>Banco de dados não está conectado ou configurado corretamente</li>
-                  <li>Erro na consulta ao banco de dados (verifique se as tabelas existem)</li>
-                  <li>Erro na conversão de dados (verifique os logs do backend)</li>
-                  <li>Problema na configuração do Spring Boot</li>
-                </ul>
-                <p className="mt-2 text-gray-600">
-                  <strong>Status:</strong> {error.status} | <strong>Path:</strong> {error.path || 'N/A'}
-                </p>
-                <p className="mt-2 text-xs text-gray-500">
-                  💡 Dica: Verifique os logs do backend em http://localhost:8080 para mais detalhes sobre o erro.
-                </p>
-                <div className="mt-3">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const statusToFetch = statusFilter === 'ALL' ? undefined : statusFilter;
-                      refetch(statusToFetch);
-                    }}
-                    disabled={isLoading}
-                  >
-                    Tentar Novamente
-                  </Button>
-                </div>
-              </div>
-            )}
-            {error.details && Object.keys(error.details).length > 0 && (
-              <div className="mt-2 text-sm">
-                <p className="font-medium mb-1">Detalhes do erro:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  {Object.entries(error.details).map(([field, message]) => (
-                    <li key={field}>
-                      <strong>{field}:</strong> {message}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {error.status !== 500 && (
-              <div className="mt-3">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const statusToFetch = statusFilter === 'ALL' ? undefined : statusFilter;
-                    refetch(statusToFetch);
-                  }}
-                  disabled={isLoading}
-                >
-                  Tentar Novamente
-                </Button>
-              </div>
-            )}
-          </div>
-        </Alert>
-      )}
+      <ErrorDisplay
+        error={error}
+        onRetry={() => {
+          const statusToFetch = statusFilter === 'ALL' ? undefined : statusFilter;
+          refetch(statusToFetch);
+        }}
+        onClose={clearError}
+        className="mb-6"
+        retryLabel="Tentar Novamente"
+      />
 
       <Card className="mb-6">
         <h2 className="text-xl font-semibold mb-4">Buscar Pedido por Número</h2>
@@ -241,14 +185,14 @@ export const OrdersListPage = () => {
             size="sm"
             onClick={() => setStatusFilter(OrderStatus.PENDING)}
           >
-            Pendentes ({orders.filter(o => o.status === OrderStatus.PENDING).length})
+            Pendentes ({orders.filter((o: OrderResponse) => o.status === OrderStatus.PENDING).length})
           </Button>
           <Button
             variant={statusFilter === OrderStatus.PAID ? 'primary' : 'secondary'}
             size="sm"
             onClick={() => setStatusFilter(OrderStatus.PAID)}
           >
-            Pagos ({orders.filter(o => o.status === OrderStatus.PAID).length})
+            Pagos ({orders.filter((o: OrderResponse) => o.status === OrderStatus.PAID).length})
           </Button>
           <Button
             variant={statusFilter === OrderStatus.PAYMENT_FAILED ? 'primary' : 'secondary'}
@@ -262,7 +206,7 @@ export const OrdersListPage = () => {
             size="sm"
             onClick={() => setStatusFilter(OrderStatus.CANCELED)}
           >
-            Cancelados ({orders.filter(o => o.status === OrderStatus.CANCELED).length})
+            Cancelados ({orders.filter((o: OrderResponse) => o.status === OrderStatus.CANCELED).length})
           </Button>
         </div>
       </Card>
@@ -299,7 +243,7 @@ export const OrdersListPage = () => {
             </div>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {orders.map((order) => (
+            {orders.map((order: OrderResponse) => (
               <OrderCard
                 key={order.id}
                 order={order}

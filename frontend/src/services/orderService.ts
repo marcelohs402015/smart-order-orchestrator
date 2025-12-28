@@ -7,15 +7,22 @@ import {
   OrderStatus,
 } from '../types';
 
+interface CreateOrderErrorResponse {
+  isCreateOrderResponse?: boolean;
+  data?: CreateOrderResponse;
+  status?: number;
+}
+
 export const createOrder = async (
   request: CreateOrderRequest
 ): Promise<CreateOrderResponse> => {
   try {
     const response = await apiClient.post<CreateOrderResponse>('/orders', request);
     return response.data;
-  } catch (error: any) {
-    if (error?.isCreateOrderResponse && error.data) {
-      return error.data as CreateOrderResponse;
+  } catch (error) {
+    const createOrderError = error as CreateOrderErrorResponse;
+    if (createOrderError?.isCreateOrderResponse && createOrderError.data) {
+      return createOrderError.data as CreateOrderResponse;
     }
     
     throw error;
