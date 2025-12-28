@@ -62,7 +62,7 @@ apiClient.interceptors.response.use(
     if (error.response) {
       const data = error.response.data as Record<string, unknown>;
       apiError.status = error.response.status;
-      apiError.error = data.error || error.response.statusText;
+      apiError.error = (typeof data.error === 'string' ? data.error : error.response.statusText) || error.response.statusText;
       
       const errorLog: Record<string, unknown> = {
         status: error.response.status,
@@ -89,17 +89,21 @@ apiClient.interceptors.response.use(
 
       logger.error('API Error', error, errorLog);
       
+      const errorMessage = typeof data.message === 'string' ? data.message : undefined;
+      
       if (error.response.status === 500) {
-        apiError.message = data.message || 'Erro interno do servidor. O backend está respondendo, mas ocorreu um erro ao processar a requisição. Verifique os logs do backend e a configuração do banco de dados.';
+        apiError.message = errorMessage || 'Erro interno do servidor. O backend está respondendo, mas ocorreu um erro ao processar a requisição. Verifique os logs do backend e a configuração do banco de dados.';
       } else if (error.response.status === 404) {
-        apiError.message = data.message || 'Recurso não encontrado.';
+        apiError.message = errorMessage || 'Recurso não encontrado.';
       } else if (error.response.status === 400) {
-        apiError.message = data.message || 'Dados inválidos. Verifique os campos do formulário.';
+        apiError.message = errorMessage || 'Dados inválidos. Verifique os campos do formulário.';
       } else {
-        apiError.message = data.message || `Erro ${error.response.status}: ${error.response.statusText}`;
+        apiError.message = errorMessage || `Erro ${error.response.status}: ${error.response.statusText}`;
       }
 
-      apiError.errors = data.errors;
+      if (data.errors && typeof data.errors === 'object') {
+        apiError.errors = data.errors as Record<string, string[]>;
+      }
       
       if (data.details && typeof data.details === 'object') {
         apiError.details = data.details as Record<string, string>;

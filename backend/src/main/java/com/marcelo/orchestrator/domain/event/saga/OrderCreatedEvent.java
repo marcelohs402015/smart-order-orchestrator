@@ -13,19 +13,19 @@ import java.util.UUID;
 public class OrderCreatedEvent implements DomainEvent {
     
     private final UUID eventId;
-    private final UUID aggregateId; // Order ID
+    private final UUID aggregateId; 
     private final LocalDateTime occurredAt;
     private final String eventType = "OrderCreated";
     
-    // Dados do pedido (snapshot no momento da criação)
+    
     private final UUID orderId;
     private final String orderNumber;
     private final UUID customerId;
     private final String customerName;
     private final String customerEmail;
-    private final java.math.BigDecimal totalAmount; // Valor total do pedido
-    private final String currency; // Moeda (ex: "BRL")
-    private final UUID sagaId; // ID da execução da saga
+    private final java.math.BigDecimal totalAmount; 
+    private final String currency; 
+    private final UUID sagaId; 
     
     public static OrderCreatedEvent from(Order order, UUID sagaId) {
         return OrderCreatedEvent.builder()
@@ -37,8 +37,8 @@ public class OrderCreatedEvent implements DomainEvent {
             .customerId(order.getCustomerId())
             .customerName(order.getCustomerName())
             .customerEmail(order.getCustomerEmail())
-            .totalAmount(order.getTotalAmount()) // BigDecimal direto do Order
-            .currency("BRL") // Moeda padrão (pode ser configurável no futuro)
+            .totalAmount(order.getTotalAmount()) 
+            .currency("BRL") 
             .sagaId(sagaId)
             .build();
     }

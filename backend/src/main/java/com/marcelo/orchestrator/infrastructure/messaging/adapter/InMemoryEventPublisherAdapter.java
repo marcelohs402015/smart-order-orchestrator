@@ -28,7 +28,7 @@ public class InMemoryEventPublisherAdapter implements EventPublisherPort {
                 event.getEventType(), event.getEventId());
                 
         } catch (Exception e) {
-            // Padrão: Fail-Safe - não interrompe fluxo principal
+            
             log.error("Failed to publish event {}: {}", event.getEventType(), e.getMessage(), e);
         }
     }

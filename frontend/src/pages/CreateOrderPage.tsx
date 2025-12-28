@@ -10,7 +10,7 @@ import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { Alert } from '../components/ui/Alert';
 import { ValidationErrorsDisplay } from '../components/ValidationErrorsDisplay';
-import { generateId } from '../utils';
+import { generateId, isValidUUID } from '../utils';
 import { logger } from '../utils/logger';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 

@@ -23,7 +23,7 @@ public class OpenAIConfig {
             .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
             .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-            // Timeout configurado para evitar requisições travadas
+            
             .build();
     }
 }

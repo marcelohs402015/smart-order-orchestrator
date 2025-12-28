@@ -10,42 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * DTO de response para pedido.
- * 
- * <p>Representa um pedido retornado pela API REST.
- * Converte entidade de domínio para formato adequado para exposição via HTTP.</p>
- * 
- * <h3>Por que DTO separado?</h3>
- * <ul>
- *   <li><strong>Segurança:</strong> Não expõe estrutura interna do domínio</li>
- *   <li><strong>Flexibilidade:</strong> Pode ter campos diferentes da entidade</li>
- *   <li><strong>Versionamento:</strong> Pode evoluir independentemente</li>
- *   <li><strong>Performance:</strong> Pode incluir apenas campos necessários</li>
- * </ul>
- * 
- * <h3>Por que Record?</h3>
- * <ul>
- *   <li><strong>Imutabilidade:</strong> Dados não podem ser alterados após criação</li>
- *   <li><strong>Simplicidade:</strong> Menos código, mais legível (Java 17+)</li>
- *   <li><strong>Performance:</strong> Menos overhead que classes tradicionais</li>
- * </ul>
- * 
- * @param id ID do pedido
- * @param orderNumber Número do pedido (ex: ORD-1234567890)
- * @param status Status do pedido
- * @param customerId ID do cliente
- * @param customerName Nome do cliente
- * @param customerEmail Email do cliente
- * @param items Lista de itens do pedido
- * @param totalAmount Valor total do pedido
- * @param paymentId ID do pagamento no gateway externo
- * @param riskLevel Nível de risco após análise
- * @param createdAt Data e hora de criação
- * @param updatedAt Data e hora da última atualização
- * 
- * @author Marcelo
- */
+
 public record OrderResponse(
     @JsonProperty("id")
     UUID id,
@@ -83,12 +48,7 @@ public record OrderResponse(
     @JsonProperty("updatedAt")
     LocalDateTime updatedAt
 ) {
-    /**
-     * Factory method para criar OrderResponse a partir de Order (domínio).
-     * 
-     * @param order Entidade de domínio
-     * @return OrderResponse
-     */
+    
     public static OrderResponse from(Order order) {
         List<OrderItemResponse> itemsResponse = order.getItems() != null
             ? order.getItems().stream()
@@ -99,7 +59,7 @@ public record OrderResponse(
                     item.getUnitPrice(),
                     item.getSubtotal()
                 ))
-                .toList() // Java 16+ - mais conciso que Collectors.toList()
+                .toList() 
             : List.of();
         
         return new OrderResponse(

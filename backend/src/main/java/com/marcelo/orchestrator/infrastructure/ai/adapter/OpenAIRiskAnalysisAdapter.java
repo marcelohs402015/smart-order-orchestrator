@@ -154,7 +154,7 @@ public class OpenAIRiskAnalysisAdapter implements RiskAnalysisPort {
     private RiskAnalysisResult createPendingResult(@SuppressWarnings("unused") RiskAnalysisRequest request, String reason) {
         return new RiskAnalysisResult(
             RiskLevel.PENDING,
-            null, // confidenceScore (não disponível em fallback)
+            null, 
             reason,
             java.time.LocalDateTime.now()
         );

@@ -1,5 +1,3 @@
-type LogLevel = 'log' | 'warn' | 'error' | 'info';
-
 interface LogContext {
   [key: string]: unknown;
 }

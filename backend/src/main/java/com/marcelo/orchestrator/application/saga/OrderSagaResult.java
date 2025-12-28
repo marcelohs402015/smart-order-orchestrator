@@ -11,7 +11,7 @@ import java.util.UUID;
 public class OrderSagaResult {
     
     private final boolean success;
-    private final boolean inProgress; // true se saga está em progresso (idempotência)
+    private final boolean inProgress; 
     private final Order order;
     private final UUID sagaExecutionId;
     private final String errorMessage;

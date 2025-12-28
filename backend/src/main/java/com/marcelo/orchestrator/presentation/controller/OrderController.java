@@ -29,25 +29,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Controller REST para operações de pedidos.
- * 
- * <p>Expõe endpoints HTTP para criação e consulta de pedidos.
- * Utiliza Saga Pattern para orquestrar o fluxo completo de criação.</p>
- * 
- * <h3>Versionamento:</h3>
- * <p>API versionada com prefixo `/api/v1` para permitir evolução
- * sem quebrar clientes existentes.</p>
- * 
- * <h3>Validação:</h3>
- * <p>Utiliza Bean Validation (@Valid) para validar dados de entrada
- * antes de processar.</p>
- * 
- * <h3>Documentação:</h3>
- * <p>Swagger/OpenAPI configurado para documentação automática da API.</p>
- * 
- * @author Marcelo
- */
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -60,17 +42,7 @@ public class OrderController {
     private final OrderPresentationMapper orderMapper;
     private final AnalyzeRiskUseCase analyzeRiskUseCase;
     
-    /**
-     * Cria um novo pedido executando a saga completa.
-     * 
-     * <p>Orquestra os 3 passos da saga:
-     * 1. Criar pedido
-     * 2. Processar pagamento
-     * 3. Analisar risco</p>
-     * 
-     * <p>Retorna resultado com pedido criado e ID da execução da saga
-     * para rastreamento e observabilidade.</p>
-     */
+    
     @PostMapping
     @Operation(
         summary = "Criar novo pedido",
@@ -85,16 +57,16 @@ public class OrderController {
             @Valid @RequestBody CreateOrderRequest request) {
         log.info("Creating order for customer: {}", request.customerId());
         
-        // Gerar idempotencyKey se não fornecido
-        // Padrão: Idempotência - garante que requisições duplicadas não criem pedidos duplicados
-        // IMPORTANTE: Se não fornecido, gera hash determinístico dos dados da requisição
-        // para garantir idempotência mesmo sem chave explícita do cliente
+        
+        
+        
+        
         String idempotencyKey = request.idempotencyKey() != null && !request.idempotencyKey().isBlank()
             ? request.idempotencyKey()
-            : generateIdempotencyKey(request); // Hash determinístico dos dados da requisição
+            : generateIdempotencyKey(request); 
         
-        // Converter DTO para Command
-        // Padrão: Dependency Injection - OrderPresentationMapper é injetado via construtor (SOLID)
+        
+        
         OrderSagaCommand command = OrderSagaCommand.builder()
             .idempotencyKey(idempotencyKey)
             .customerId(request.customerId())
@@ -105,11 +77,11 @@ public class OrderController {
             .currency(request.currency() != null ? request.currency() : "BRL")
             .build();
         
-        // Executar saga
+        
         OrderSagaResult result = sagaOrchestrator.execute(command);
         
-        // Converter resultado para response
-        // Padrão: Idempotência - tratar caso de saga em progresso
+        
+        
         if (result.isSuccess()) {
             CreateOrderResponse response = CreateOrderResponse.success(
                 OrderResponse.from(result.getOrder()),
@@ -117,7 +89,7 @@ public class OrderController {
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } else if (result.isInProgress()) {
-            // Saga já está em progresso (idempotência)
+            
             CreateOrderResponse response = CreateOrderResponse.inProgress(
                 result.getOrder() != null ? OrderResponse.from(result.getOrder()) : null,
                 result.getSagaExecutionId(),
@@ -134,9 +106,7 @@ public class OrderController {
         }
     }
     
-    /**
-     * Busca um pedido pelo ID.
-     */
+    
     @GetMapping("/{id}")
     @Operation(
         summary = "Buscar pedido por ID",
@@ -156,9 +126,7 @@ public class OrderController {
             .orElse(ResponseEntity.notFound().build());
     }
     
-    /**
-     * Busca um pedido pelo número do pedido.
-     */
+    
     @GetMapping("/number/{orderNumber}")
     @Operation(
         summary = "Buscar pedido por número",
@@ -178,12 +146,7 @@ public class OrderController {
             .orElse(ResponseEntity.notFound().build());
     }
     
-    /**
-     * Lista todos os pedidos ou filtra por status.
-     * 
-     * <p>Se o parâmetro {@code status} for fornecido, retorna apenas pedidos
-     * com aquele status. Caso contrário, retorna todos os pedidos.</p>
-     */
+    
     @GetMapping
     @Operation(
         summary = "Listar pedidos",
@@ -202,30 +165,18 @@ public class OrderController {
             log.info("Finding orders by status: {}", status);
             orders = orderRepository.findByStatus(status).stream()
                 .map(OrderResponse::from)
-                .toList(); // Java 16+ - mais conciso que Collectors.toList()
+                .toList(); 
         } else {
             log.info("Finding all orders");
             orders = orderRepository.findAll().stream()
                 .map(OrderResponse::from)
-                .toList(); // Java 16+ - mais conciso que Collectors.toList()
+                .toList(); 
         }
         
         return ResponseEntity.ok(orders);
     }
     
-    /**
-     * Dispara manualmente a análise de risco de um pedido existente.
-     * 
-     * <p>Este endpoint é útil para demonstrações e para cenários onde o pagamento ainda
-     * está PAYMENT_PENDING, mas queremos forçar a classificação de risco via IA.</p>
-     *
-     * <p>Regras:
-     * <ul>
-     *   <li>Somente pedidos com status PAID ou PAYMENT_PENDING são aceitos</li>
-     *   <li>Se a feature flag de riskAnalysis estiver desabilitada, apenas retorna o pedido atual</li>
-     * </ul>
-     * </p>
-     */
+    
     @PostMapping("/{id}/analyze-risk")
     @Operation(
         summary = "Analisar risco de um pedido via IA",
@@ -243,7 +194,7 @@ public class OrderController {
     ) {
         log.info("Manually triggering risk analysis for order {}", id);
         
-        // Para o demo usamos PIX como paymentMethod; em cenários reais poderíamos inferir do pagamento
+        
         AnalyzeRiskCommand command = AnalyzeRiskCommand.builder()
             .orderId(id)
             .paymentMethod("PIX")
@@ -253,21 +204,10 @@ public class OrderController {
         return ResponseEntity.ok(OrderResponse.from(analyzedOrder));
     }
     
-    /**
-     * Gera idempotencyKey determinística baseada nos dados da requisição.
-     * 
-     * <p>Padrão: Idempotência - Gera hash SHA-256 dos dados da requisição para garantir
-     * que requisições idênticas (mesmos dados) tenham a mesma chave, prevenindo duplicação.</p>
-     * 
-     * <p>Se o cliente não fornecer idempotencyKey, esta função garante que requisições
-     * com os mesmos dados produzam a mesma chave, mantendo idempotência.</p>
-     * 
-     * @param request Dados da requisição
-     * @return Hash SHA-256 dos dados da requisição como idempotencyKey
-     */
+    
     private String generateIdempotencyKey(CreateOrderRequest request) {
         try {
-            // Criar string única com todos os dados relevantes da requisição
+            
             StringBuilder data = new StringBuilder();
             data.append(request.customerId());
             data.append(request.customerEmail());
@@ -276,7 +216,7 @@ public class OrderController {
                 data.append(request.currency());
             }
             
-            // Adicionar dados dos itens (produto, quantidade, preço)
+            
             if (request.items() != null) {
                 request.items().forEach(item -> {
                     data.append(item.productId());
@@ -286,11 +226,11 @@ public class OrderController {
                 });
             }
             
-            // Gerar hash SHA-256
+            
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(data.toString().getBytes(StandardCharsets.UTF_8));
             
-            // Converter para hexadecimal
+            
             StringBuilder hexString = new StringBuilder();
             for (byte b : hash) {
                 String hex = Integer.toHexString(0xff & b);
@@ -302,7 +242,7 @@ public class OrderController {
             
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
-            // Fallback: se SHA-256 não disponível, usar UUID (não ideal, mas funcional)
+            
             log.warn("SHA-256 not available, using UUID as fallback for idempotency key");
             return UUID.randomUUID().toString();
         }

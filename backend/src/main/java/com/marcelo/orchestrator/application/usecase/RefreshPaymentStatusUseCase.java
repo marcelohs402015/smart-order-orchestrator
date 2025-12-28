@@ -35,7 +35,7 @@ public class RefreshPaymentStatusUseCase {
         log.info("Refreshed payment status for order {}. paymentId={}, status={}",
             orderId, order.getPaymentId(), status);
 
-        // Salvar status anterior para verificar se mudou para PAID
+        
         boolean wasPaid = order.isPaid();
 
         switch (status) {
@@ -50,7 +50,7 @@ public class RefreshPaymentStatusUseCase {
                 }
             }
             case PENDING, REFUNDED -> {
-                // For now, keep current order status; could be extended later.
+                
                 log.info("Payment status is {} for order {}. Keeping current order status {}.",
                     status, orderId, order.getStatus());
             }
@@ -58,7 +58,7 @@ public class RefreshPaymentStatusUseCase {
 
         Order updatedOrder = orderRepository.save(order);
         
-        // Publicar evento no Kafka se status mudou para PAID
+        
         if (!wasPaid && updatedOrder.isPaid()) {
             publishPaymentProcessedEvent(updatedOrder);
         }
@@ -72,7 +72,7 @@ public class RefreshPaymentStatusUseCase {
             eventPublisher.publish(event);
             log.info("PaymentProcessedEvent published for order {} (status: PAID)", order.getId());
         } catch (Exception e) {
-            // Padrão: Fail-Safe - loga erro mas não lança exceção
+            
             log.error("Failed to publish PaymentProcessedEvent for order {}: {}", 
                 order.getId(), e.getMessage(), e);
         }

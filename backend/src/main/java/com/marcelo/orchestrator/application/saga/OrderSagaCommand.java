@@ -16,13 +16,13 @@ public class OrderSagaCommand {
     
     private final String idempotencyKey;
     
-    // Dados para criação do pedido
+    
     private final UUID customerId;
     private final String customerName;
     private final String customerEmail;
     private final List<OrderItem> items;
     
-    // Dados para processamento de pagamento
+    
     private final String paymentMethod;
     private final String currency;
     

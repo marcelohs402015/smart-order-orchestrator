@@ -25,19 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Testes unitários para OrderRepositoryAdapter.
- * 
- * <p>Testa o adaptador que implementa OrderRepositoryPort usando mocks.
- * Foca em validar a conversão entre domínio e JPA, não a persistência real.</p>
- * 
- * <h3>Estratégia de Teste:</h3>
- * <ul>
- *   <li><strong>Mocks:</strong> JpaOrderRepository e OrderMapper são mockados</li>
- *   <li><strong>Isolamento:</strong> Testa apenas lógica do adapter, não JPA real</li>
- *   <li><strong>Validação:</strong> Verifica que conversões são chamadas corretamente</li>
- * </ul>
- */
+
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrderRepositoryAdapter Tests")
 class OrderRepositoryAdapterTest {
@@ -56,7 +44,7 @@ class OrderRepositoryAdapterTest {
     
     @BeforeEach
     void setUp() {
-        // Criar Order de teste (domínio)
+        
         testOrder = Order.builder()
             .id(UUID.randomUUID())
             .orderNumber("ORD-123")
@@ -78,7 +66,7 @@ class OrderRepositoryAdapterTest {
             .updatedAt(LocalDateTime.now())
             .build();
         
-        // Criar OrderEntity de teste (JPA)
+        
         testEntity = new OrderEntity();
         testEntity.setId(testOrder.getId());
         testEntity.setOrderNumber(testOrder.getOrderNumber());
@@ -88,15 +76,15 @@ class OrderRepositoryAdapterTest {
     @Test
     @DisplayName("Deve salvar pedido convertendo domínio para JPA e vice-versa")
     void shouldSaveOrderConvertingDomainToJpaAndBack() {
-        // Arrange
+        
         when(orderMapper.toEntity(testOrder)).thenReturn(testEntity);
         when(jpaOrderRepository.save(testEntity)).thenReturn(testEntity);
         when(orderMapper.toDomain(testEntity)).thenReturn(testOrder);
         
-        // Act
+        
         Order savedOrder = adapter.save(testOrder);
         
-        // Assert
+        
         assertNotNull(savedOrder);
         verify(orderMapper).toEntity(testOrder);
         verify(jpaOrderRepository).save(testEntity);
@@ -106,15 +94,15 @@ class OrderRepositoryAdapterTest {
     @Test
     @DisplayName("Deve buscar pedido por ID")
     void shouldFindOrderById() {
-        // Arrange
+        
         UUID orderId = testOrder.getId();
         when(jpaOrderRepository.findByIdWithItems(orderId)).thenReturn(Optional.of(testEntity));
         when(orderMapper.toDomain(testEntity)).thenReturn(testOrder);
         
-        // Act
+        
         Optional<Order> result = adapter.findById(orderId);
         
-        // Assert
+        
         assertTrue(result.isPresent());
         assertEquals(testOrder.getId(), result.get().getId());
         verify(jpaOrderRepository).findByIdWithItems(orderId);
@@ -124,14 +112,14 @@ class OrderRepositoryAdapterTest {
     @Test
     @DisplayName("Deve retornar Optional vazio quando pedido não encontrado")
     void shouldReturnEmptyWhenOrderNotFound() {
-        // Arrange
+        
         UUID orderId = UUID.randomUUID();
         when(jpaOrderRepository.findByIdWithItems(orderId)).thenReturn(Optional.empty());
         
-        // Act
+        
         Optional<Order> result = adapter.findById(orderId);
         
-        // Assert
+        
         assertTrue(result.isEmpty());
         verify(jpaOrderRepository).findByIdWithItems(orderId);
         verify(orderMapper, never()).toDomain(any());

@@ -27,11 +27,11 @@ public class ProcessPaymentUseCase {
     public Order execute(ProcessPaymentCommand command) {
         log.info("Processing payment for order: {}", command.getOrderId());
         
-        // Buscar pedido
+        
         Order order = orderRepository.findById(command.getOrderId())
             .orElseThrow(() -> new OrderNotFoundException(command.getOrderId()));
         
-        // Validar estado
+        
         if (!order.isPending()) {
             throw new IllegalStateException(
                 String.format("Order %s is not in PENDING status. Current status: %s",
@@ -39,7 +39,7 @@ public class ProcessPaymentUseCase {
             );
         }
         
-        // Criar requisição de pagamento
+        
         PaymentRequest paymentRequest = new PaymentRequest(
             order.getId(),
             order.getTotalAmount(),
@@ -48,19 +48,19 @@ public class ProcessPaymentUseCase {
             order.getCustomerEmail()
         );
         
-        // Processar pagamento no gateway (Circuit Breaker protege esta chamada)
+        
         PaymentResult paymentResult = paymentGateway.processPayment(paymentRequest);
         
-        // Atualizar pedido baseado no resultado
+        
         if (paymentResult.isSuccessful()) {
-            // Pagamento confirmado na primeira chamada
+            
             order.markAsPaid(paymentResult.paymentId());
             log.info("Payment successful for order: {} - Payment ID: {}",
                 order.getId(), paymentResult.paymentId());
         } else {
-            // Se o gateway sinalizar pagamento pendente, mantemos pedido em estado intermediário
-            // e não marcamos como falha definitiva. Ainda assim, anexamos o paymentId para
-            // permitir consultas futuras de status.
+            
+            
+            
             if (paymentResult.status() == PaymentStatus.PENDING && paymentResult.paymentId() != null) {
                 order.attachPaymentId(paymentResult.paymentId());
                 order.updateStatus(com.marcelo.orchestrator.domain.model.OrderStatus.PAYMENT_PENDING);
@@ -73,10 +73,10 @@ public class ProcessPaymentUseCase {
             }
         }
         
-        // Persistir mudança
+        
         Order updatedOrder = orderRepository.save(order);
         
-        // Notificar
+        
         try {
             if (paymentResult.isSuccessful()) {
                 notificationPort.notifyOrderStatusChanged(updatedOrder);

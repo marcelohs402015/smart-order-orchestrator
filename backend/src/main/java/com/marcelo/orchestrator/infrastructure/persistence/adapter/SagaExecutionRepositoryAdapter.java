@@ -12,29 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Adaptador que implementa SagaExecutionRepositoryPort usando JPA.
- * 
- * <p>Este é o <strong>Adapter</strong> na Arquitetura Hexagonal.
- * Converte entre objetos de domínio ({@code SagaExecution}) e entidades JPA ({@code SagaExecutionEntity}),
- * implementando a porta definida no domínio.</p>
- * 
- * <h3>Padrão Adapter (Hexagonal Architecture):</h3>
- * <ul>
- *   <li><strong>Port:</strong> SagaExecutionRepositoryPort (definida no domínio)</li>
- *   <li><strong>Adapter:</strong> Esta classe (implementa a porta)</li>
- *   <li><strong>Inversão de Dependência:</strong> Application não conhece esta implementação</li>
- * </ul>
- * 
- * <h3>Responsabilidades:</h3>
- * <ul>
- *   <li>Converter SagaExecution (domínio) ↔ SagaExecutionEntity (JPA)</li>
- *   <li>Chamar JpaSagaExecutionRepository (Spring Data JPA)</li>
- *   <li>Tratar erros de persistência</li>
- * </ul>
- * 
- * @author Marcelo
- */
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -47,13 +25,13 @@ public class SagaExecutionRepositoryAdapter implements SagaExecutionRepositoryPo
             SagaExecutionRepositoryPort.SagaExecution sagaExecution) {
         log.debug("Saving saga execution: {}", sagaExecution.id());
         
-        // Converter domínio para JPA
+        
         SagaExecutionEntity entity = toEntity(sagaExecution);
         
-        // Salvar usando Spring Data JPA
+        
         SagaExecutionEntity savedEntity = jpaSagaExecutionRepository.save(entity);
         
-        // Converter JPA para domínio
+        
         return toDomain(savedEntity);
     }
     
@@ -101,9 +79,7 @@ public class SagaExecutionRepositoryAdapter implements SagaExecutionRepositoryPo
             .map(this::toDomain);
     }
     
-    /**
-     * Converte SagaExecution (domínio) para SagaExecutionEntity (JPA).
-     */
+    
     private SagaExecutionEntity toEntity(SagaExecutionRepositoryPort.SagaExecution sagaExecution) {
         SagaExecutionEntity.SagaStatus jpaStatus = mapToJpaStatus(sagaExecution.status());
         
@@ -119,7 +95,7 @@ public class SagaExecutionRepositoryAdapter implements SagaExecutionRepositoryPo
             .durationMs(sagaExecution.durationMs())
             .build();
         
-        // Mapear steps se existirem
+        
         if (sagaExecution.steps() != null && !sagaExecution.steps().isEmpty()) {
             List<SagaStepEntity> stepEntities = sagaExecution.steps().stream()
                 .map(step -> toStepEntity(step, entity))
@@ -130,9 +106,7 @@ public class SagaExecutionRepositoryAdapter implements SagaExecutionRepositoryPo
         return entity;
     }
     
-    /**
-     * Converte SagaExecutionEntity (JPA) para SagaExecution (domínio).
-     */
+    
     private SagaExecutionRepositoryPort.SagaExecution toDomain(SagaExecutionEntity entity) {
         SagaExecutionRepositoryPort.SagaExecution.SagaStatus domainStatus = mapToDomainStatus(entity.getStatus());
         
@@ -156,9 +130,7 @@ public class SagaExecutionRepositoryAdapter implements SagaExecutionRepositoryPo
         );
     }
     
-    /**
-     * Converte SagaStep (domínio) para SagaStepEntity (JPA).
-     */
+    
     private SagaStepEntity toStepEntity(
             SagaExecutionRepositoryPort.SagaStep step, SagaExecutionEntity sagaExecution) {
         SagaStepEntity.StepStatus jpaStepStatus = mapToJpaStepStatus(step.status());
@@ -175,9 +147,7 @@ public class SagaExecutionRepositoryAdapter implements SagaExecutionRepositoryPo
             .build();
     }
     
-    /**
-     * Converte SagaStepEntity (JPA) para SagaStep (domínio).
-     */
+    
     private SagaExecutionRepositoryPort.SagaStep toStepDomain(SagaStepEntity entity) {
         SagaExecutionRepositoryPort.SagaStep.StepStatus domainStepStatus = mapToDomainStepStatus(entity.getStatus());
         
@@ -193,9 +163,7 @@ public class SagaExecutionRepositoryAdapter implements SagaExecutionRepositoryPo
         );
     }
     
-    /**
-     * Mapeia SagaStatus do domínio para SagaStatus do JPA.
-     */
+    
     private SagaExecutionEntity.SagaStatus mapToJpaStatus(
             SagaExecutionRepositoryPort.SagaExecution.SagaStatus domainStatus) {
         return switch (domainStatus) {
@@ -209,9 +177,7 @@ public class SagaExecutionRepositoryAdapter implements SagaExecutionRepositoryPo
         };
     }
     
-    /**
-     * Mapeia SagaStatus do JPA para SagaStatus do domínio.
-     */
+    
     private SagaExecutionRepositoryPort.SagaExecution.SagaStatus mapToDomainStatus(
             SagaExecutionEntity.SagaStatus jpaStatus) {
         return switch (jpaStatus) {
@@ -225,9 +191,7 @@ public class SagaExecutionRepositoryAdapter implements SagaExecutionRepositoryPo
         };
     }
     
-    /**
-     * Mapeia StepStatus do domínio para StepStatus do JPA.
-     */
+    
     private SagaStepEntity.StepStatus mapToJpaStepStatus(
             SagaExecutionRepositoryPort.SagaStep.StepStatus domainStatus) {
         return switch (domainStatus) {
@@ -237,9 +201,7 @@ public class SagaExecutionRepositoryAdapter implements SagaExecutionRepositoryPo
         };
     }
     
-    /**
-     * Mapeia StepStatus do JPA para StepStatus do domínio.
-     */
+    
     private SagaExecutionRepositoryPort.SagaStep.StepStatus mapToDomainStepStatus(
             SagaStepEntity.StepStatus jpaStatus) {
         return switch (jpaStatus) {

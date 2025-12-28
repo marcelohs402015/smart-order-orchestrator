@@ -17,29 +17,22 @@ public class UpdateOrderStatusUseCase {
     private final OrderRepositoryPort orderRepository;
     private final NotificationPort notificationPort;
     
-    /**
-     * Atualiza status de um pedido.
-     * 
-     * @param command Command com ID do pedido e novo status
-     * @return Pedido atualizado
-     * @throws OrderNotFoundException se pedido não encontrado
-     * @throws IllegalStateException se transição não é permitida (validação no domínio)
-     */
+    
     @Transactional
     public Order execute(UpdateOrderStatusCommand command) {
         log.info("Updating status for order: {} to {}", command.getOrderId(), command.getNewStatus());
         
-        // Buscar pedido
+        
         Order order = orderRepository.findById(command.getOrderId())
             .orElseThrow(() -> new OrderNotFoundException(command.getOrderId()));
         
-        // Atualizar status (validação de transição acontece aqui - no domínio)
+        
         order.updateStatus(command.getNewStatus());
         
-        // Persistir mudança
+        
         Order updatedOrder = orderRepository.save(order);
         
-        // Notificar sobre mudança de status
+        
         try {
             notificationPort.notifyOrderStatusChanged(updatedOrder);
         } catch (Exception e) {

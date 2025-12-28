@@ -7,90 +7,21 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/**
- * Factory para criar instâncias de EventPublisherPort baseado na configuração.
- * 
- * <p>Implementa o padrão <strong>Factory Pattern</strong> para permitir que o sistema
- * use diferentes message brokers (Kafka, Pub/Sub, RabbitMQ, etc.) sem alterar o código
- * que usa o EventPublisherPort.</p>
- * 
- * <h3>Padrão: Factory Pattern</h3>
- * <ul>
- *   <li><strong>Encapsula Criação:</strong> Centraliza a lógica de criação de objetos</li>
- *   <li><strong>Flexibilidade:</strong> Permite trocar implementação via configuração</li>
- *   <li><strong>Extensibilidade:</strong> Fácil adicionar novos tipos de message brokers</li>
- *   <li><strong>Desacoplamento:</strong> Clientes não conhecem qual implementação está sendo usada</li>
- * </ul>
- * 
- * <h3>Por que Factory Pattern aqui?</h3>
- * <ul>
- *   <li><strong>Múltiplas Implementações:</strong> Sistema pode usar Kafka, Pub/Sub, RabbitMQ, etc.</li>
- *   <li><strong>Configuração Dinâmica:</strong> Escolha do broker via propriedade (app.message.broker.type)</li>
- *   <li><strong>Testabilidade:</strong> Fácil mockar ou usar implementação in-memory em testes</li>
- *   <li><strong>Evolução:</strong> Pode migrar de um broker para outro sem alterar código cliente</li>
- * </ul>
- * 
- * <h3>Tipos Suportados:</h3>
- * <ul>
- *   <li><strong>IN_MEMORY:</strong> Implementação em memória (para testes e desenvolvimento)</li>
- *   <li><strong>KAFKA:</strong> Apache Kafka (alta performance, escalável)</li>
- *   <li><strong>RABBITMQ:</strong> RabbitMQ (AMQP, fácil de usar)</li>
- *   <li><strong>SQS:</strong> AWS SQS (AWS nativo, serverless)</li>
- * </ul>
- * 
- * <h3>Uso:</h3>
- * <pre>{@code
- * // Configuração em application.yml:
- * message:
- *   broker:
- *     type: KAFKA  # ou PUBSUB, RABBITMQ, etc.
- * 
- * // Spring injeta automaticamente via construtor (Dependency Injection):
- * private final EventPublisherPort eventPublisher; // Usa implementação correta
- * }</pre>
- * 
- * <h3>Extensibilidade:</h3>
- * <p>Para adicionar novo message broker:</p>
- * <ol>
- *   <li>Criar adapter implementando EventPublisherPort (ex: SnsEventPublisherAdapter)</li>
- *   <li>Adicionar tipo no enum MessageBrokerType</li>
- *   <li>Adicionar case no método create()</li>
- *   <li>Configurar Spring Bean para o novo adapter</li>
- * </ol>
- * 
- * @author Marcelo
- */
+
 @Slf4j
 @Component
 public class EventPublisherFactory {
     
-    // Injeção opcional - KafkaEventPublisherAdapter só existe quando app.message.broker.type=KAFKA
     
-    /**
-     * Tipo de message broker a ser usado.
-     * 
- * <p>Configurado via propriedade: {@code app.message.broker.type}</p>
- * <p>Valores possíveis: IN_MEMORY, KAFKA, RABBITMQ, SQS</p>
-     */
+    
+    
     @Value("${app.message.broker.type:IN_MEMORY}")
     private String brokerType;
     
     private final InMemoryEventPublisherAdapter inMemoryAdapter;
     private final KafkaEventPublisherAdapter kafkaAdapter;
     
-    /**
-     * Construtor com injeção de dependências.
-     * 
-     * <p>Padrão: Dependency Injection (Spring) - permite que Spring gerencie
-     * o ciclo de vida dos adapters.</p>
-     * 
-     * <p>KafkaEventPublisherAdapter é opcional (pode ser null se Kafka não estiver configurado).
-     * Usa {@code @org.springframework.lang.Nullable} para indicar que pode ser null.
-     * Isso permite que a aplicação funcione mesmo sem Kafka, usando fallback para IN_MEMORY.</p>
-     * 
-     * <p>Alinhado com SOLID - Dependency Inversion Principle: Factory depende de abstrações
-     * (EventPublisherPort), não de implementações concretas.</p>
-     */
+    
     public EventPublisherFactory(
             InMemoryEventPublisherAdapter inMemoryAdapter,
             @org.springframework.beans.factory.annotation.Autowired(required = false) KafkaEventPublisherAdapter kafkaAdapter) {
@@ -98,15 +29,7 @@ public class EventPublisherFactory {
         this.kafkaAdapter = kafkaAdapter;
     }
     
-    /**
-     * Cria instância de EventPublisherPort baseado na configuração.
-     * 
-     * <p>Padrão: Factory Method - encapsula a lógica de criação e retorna
-     * a implementação apropriada baseada no tipo configurado.</p>
-     * 
-     * @return Instância de EventPublisherPort configurada
-     * @throws IllegalArgumentException se tipo não for suportado
-     */
+    
     public EventPublisherPort create() {
         MessageBrokerType type = MessageBrokerType.fromString(brokerType);
         
@@ -132,12 +55,7 @@ public class EventPublisherFactory {
         };
     }
     
-    /**
-     * Enum com tipos de message brokers suportados.
-     * 
-     * <p>Padrão: Type-Safe Enum - garante que apenas valores válidos sejam usados,
-     * prevenindo erros de configuração.</p>
-     */
+    
     public enum MessageBrokerType {
         IN_MEMORY("IN_MEMORY"),
         KAFKA("KAFKA"),

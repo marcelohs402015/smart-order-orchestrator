@@ -15,29 +15,12 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Exception Handler global para tratamento centralizado de exceções.
- * 
- * <p>Captura exceções lançadas em qualquer controller e retorna
- * respostas HTTP apropriadas com mensagens de erro estruturadas.</p>
- * 
- * <h3>Benefícios:</h3>
- * <ul>
- *   <li><strong>Centralização:</strong> Tratamento de erros em um único lugar</li>
- *   <li><strong>Consistência:</strong> Formato de erro padronizado</li>
- *   <li><strong>Segurança:</strong> Não expõe detalhes internos do sistema</li>
- *   <li><strong>UX:</strong> Mensagens de erro claras para o cliente</li>
- * </ul>
- * 
- * @author Marcelo
- */
+
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     
-    /**
-     * Trata exceções de validação (Bean Validation).
-     */
+    
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
         log.warn("Validation error: {}", ex.getMessage());
@@ -60,9 +43,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errorResponse);
     }
     
-    /**
-     * Trata exceções de domínio (OrderNotFoundException).
-     */
+    
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleOrderNotFoundException(OrderNotFoundException ex) {
         log.warn("Order not found: {}", ex.getMessage());
@@ -78,9 +59,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
     
-    /**
-     * Trata exceções de domínio (InvalidOrderStatusException).
-     */
+    
     @ExceptionHandler(InvalidOrderStatusException.class)
     public ResponseEntity<ErrorResponse> handleInvalidOrderStatusException(InvalidOrderStatusException ex) {
         log.warn("Invalid order status: {}", ex.getMessage());
@@ -96,9 +75,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errorResponse);
     }
     
-    /**
-     * Trata exceções genéricas de domínio.
-     */
+    
     @ExceptionHandler(DomainException.class)
     public ResponseEntity<ErrorResponse> handleDomainException(DomainException ex) {
         log.warn("Domain exception: {}", ex.getMessage());
@@ -114,9 +91,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errorResponse);
     }
     
-    /**
-     * Trata IllegalArgumentException (validações de aplicação).
-     */
+    
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
         log.warn("Illegal argument: {}", ex.getMessage());
@@ -132,9 +107,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errorResponse);
     }
     
-    /**
-     * Trata IllegalStateException (estados inválidos).
-     */
+    
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponse> handleIllegalStateException(IllegalStateException ex) {
         log.warn("Illegal state: {}", ex.getMessage());
@@ -150,9 +123,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
     
-    /**
-     * Trata exceções não mapeadas (fallback).
-     */
+    
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         log.error("Unexpected error: {}", ex.getMessage(), ex);

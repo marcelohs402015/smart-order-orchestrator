@@ -10,28 +10,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
-/**
- * Configuração do Swagger/OpenAPI para documentação da API REST.
- * 
- * <p>Define informações da API, servidores e configurações gerais
- * para geração automática da documentação interativa.</p>
- * 
- * <h3>Acesso à Documentação:</h3>
- * <ul>
- *   <li><strong>Swagger UI:</strong> http://localhost:8080/swagger-ui.html</li>
- *   <li><strong>OpenAPI JSON:</strong> http://localhost:8080/v3/api-docs</li>
- * </ul>
- * 
- * <h3>Por que Swagger/OpenAPI?</h3>
- * <ul>
- *   <li><strong>Documentação Automática:</strong> Gera documentação a partir de anotações</li>
- *   <li><strong>Teste Interativo:</strong> Permite testar API diretamente do navegador</li>
- *   <li><strong>Contrato de API:</strong> Define contrato claro entre cliente e servidor</li>
- *   <li><strong>Versionamento:</strong> Suporta múltiplas versões da API</li>
- * </ul>
- * 
- * @author Marcelo
- */
+
 @Configuration
 public class OpenApiConfig {
     

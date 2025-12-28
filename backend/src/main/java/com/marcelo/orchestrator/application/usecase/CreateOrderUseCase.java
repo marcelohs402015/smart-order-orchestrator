@@ -24,10 +24,10 @@ public class CreateOrderUseCase {
     public Order execute(CreateOrderCommand command) {
         log.info("Creating order for customer: {}", command.getCustomerId());
         
-        // Validação de entrada
+        
         validateCommand(command);
         
-        // Criar entidade de domínio
+        
         Order order = Order.builder()
             .id(UUID.randomUUID())
             .orderNumber(OrderNumber.generate().getValue())
@@ -36,22 +36,22 @@ public class CreateOrderUseCase {
             .customerName(command.getCustomerName())
             .customerEmail(command.getCustomerEmail())
             .items(command.getItems())
-            .riskLevel(RiskLevel.PENDING) // Inicialmente pendente, será analisado depois
+            .riskLevel(RiskLevel.PENDING) 
             .createdAt(LocalDateTime.now())
             .updatedAt(LocalDateTime.now())
             .build();
         
-        // Calcular total (regra de negócio no domínio)
+        
         order.calculateTotal();
         
-        // Persistir através da porta (infraestrutura implementa)
+        
         Order savedOrder = orderRepository.save(order);
         
-        // Notificar (infraestrutura implementa - pode ser email, webhook, etc.)
+        
         try {
             notificationPort.notifyOrderCreated(savedOrder);
         } catch (Exception e) {
-            // Log mas não falha a transação (notificação não é crítica)
+            
             log.warn("Failed to send notification for order {}: {}", savedOrder.getId(), e.getMessage());
         }
         

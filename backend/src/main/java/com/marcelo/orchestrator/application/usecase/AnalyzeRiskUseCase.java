@@ -29,19 +29,19 @@ public class AnalyzeRiskUseCase {
     public Order execute(AnalyzeRiskCommand command) {
         log.info("Analyzing risk for order: {}", command.getOrderId());
         
-        // Buscar pedido
+        
         Order order = orderRepository.findById(command.getOrderId())
             .orElseThrow(() -> new OrderNotFoundException(command.getOrderId()));
         
-        // Feature flag: permite desabilitar a análise de risco via configuração
+        
         if (!riskAnalysisEnabled) {
             log.info("Risk analysis feature is DISABLED. Skipping OpenAI call for order {}. Current riskLevel: {}",
                 order.getId(), order.getRiskLevel());
-            // Mantém fluxo de saga, apenas não chama IA. Persiste estado atual para consistência.
+            
             return orderRepository.save(order);
         }
         
-        // Validar estado - analisa pedidos PAID ou PAYMENT_PENDING (pagamento em andamento)
+        
         if (!(order.isPaid() || order.getStatus() == OrderStatus.PAYMENT_PENDING)) {
             throw new IllegalStateException(
                 String.format("Cannot analyze risk for order %s. Order must be PAID or PAYMENT_PENDING. Current status: %s",
@@ -49,7 +49,7 @@ public class AnalyzeRiskUseCase {
             );
         }
         
-        // Criar requisição de análise
+        
         RiskAnalysisRequest request = new RiskAnalysisRequest(
             order.getId(),
             order.getTotalAmount(),
@@ -59,28 +59,28 @@ public class AnalyzeRiskUseCase {
             buildAdditionalContext(order)
         );
         
-        // Analisar risco (pode falhar - fallback gracioso)
+        
         try {
             RiskAnalysisResult result = riskAnalysisPort.analyzeRisk(request);
             
-            // Atualizar nível de risco
+            
             order = updateOrderRiskLevel(order, result);
             
             log.info("Risk analysis completed for order: {} - Risk Level: {} - Reason: {}",
                 order.getId(), order.getRiskLevel(), result.reason());
         } catch (Exception e) {
-            // Fallback gracioso: mantém PENDING se análise falhar
+            
             log.warn("Risk analysis failed for order: {} - Keeping risk level as PENDING. Error: {}",
                 order.getId(), e.getMessage());
-            // Risk level permanece PENDING (já é o valor inicial)
+            
         }
         
-        // Persistir (mesmo se análise falhou, pode ter outras mudanças)
+        
         return orderRepository.save(order);
     }
     
     private Order updateOrderRiskLevel(Order order, RiskAnalysisResult result) {
-        // Atualiza riskLevel usando método do domínio
+        
         order.updateRiskLevel(result.riskLevel());
         return order;
     }

@@ -28,26 +28,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Testes unitários para AnalyzeRiskUseCase.
- * 
- * <p>Testa a orquestração completa da análise de risco, incluindo:
- * - Validação de estado do pedido
- * - Integração com RiskAnalysisPort
- * - Atualização do riskLevel
- * - Tratamento de erros com fallback gracioso</p>
- * 
- * <h3>Estratégia de Teste:</h3>
- * <ul>
- *   <li><strong>Mocks:</strong> OrderRepositoryPort e RiskAnalysisPort são mockados</li>
- *   <li><strong>Isolamento:</strong> Testa apenas lógica do Use Case</li>
- *   <li><strong>Cenários:</strong> Sucesso, falha de validação, falha de IA, fallback</li>
- * </ul>
- * 
- * <h3>Por que este teste é importante?</h3>
- * <p>Demonstra que a orquestração entre camadas funciona corretamente,
- * validando integração entre Application → Domain → Infrastructure.</p>
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AnalyzeRiskUseCase Tests")
 class AnalyzeRiskUseCaseTest {
@@ -66,7 +46,6 @@ class AnalyzeRiskUseCaseTest {
     
     @BeforeEach
     void setUp() {
-        // Criar pedido pago para testes
         OrderItem item = OrderItem.builder()
             .productId(UUID.randomUUID())
             .productName("Produto 1")
@@ -88,23 +67,19 @@ class AnalyzeRiskUseCaseTest {
             .updatedAt(LocalDateTime.now())
             .build();
         
-        // Calcular total
         paidOrder.calculateTotal();
         
-        // Criar command
         command = AnalyzeRiskCommand.builder()
             .orderId(paidOrder.getId())
             .paymentMethod("PIX")
             .build();
         
-        // Habilitar feature flag de análise de risco para os testes (por padrão o campo boolean seria false)
         ReflectionTestUtils.setField(useCase, "riskAnalysisEnabled", true);
     }
     
     @Test
     @DisplayName("Deve analisar risco com sucesso e retornar LOW")
     void shouldAnalyzeRiskSuccessfullyAndReturnLow() {
-        // Arrange
         RiskAnalysisResult result = new RiskAnalysisResult(
             RiskLevel.LOW,
             null,
@@ -119,10 +94,8 @@ class AnalyzeRiskUseCaseTest {
         when(orderRepository.save(any(Order.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
         
-        // Act
         Order updatedOrder = useCase.execute(command);
         
-        // Assert
         assertNotNull(updatedOrder);
         assertEquals(RiskLevel.LOW, updatedOrder.getRiskLevel());
         verify(riskAnalysisPort, times(1)).analyzeRisk(any(RiskAnalysisRequest.class));
@@ -132,7 +105,6 @@ class AnalyzeRiskUseCaseTest {
     @Test
     @DisplayName("Deve analisar risco com sucesso e retornar HIGH")
     void shouldAnalyzeRiskSuccessfullyAndReturnHigh() {
-        // Arrange
         RiskAnalysisResult result = new RiskAnalysisResult(
             RiskLevel.HIGH,
             null,
@@ -147,10 +119,8 @@ class AnalyzeRiskUseCaseTest {
         when(orderRepository.save(any(Order.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
         
-        // Act
         Order updatedOrder = useCase.execute(command);
         
-        // Assert
         assertNotNull(updatedOrder);
         assertEquals(RiskLevel.HIGH, updatedOrder.getRiskLevel());
         verify(riskAnalysisPort, times(1)).analyzeRisk(any(RiskAnalysisRequest.class));
@@ -159,11 +129,9 @@ class AnalyzeRiskUseCaseTest {
     @Test
     @DisplayName("Deve lançar exceção quando pedido não encontrado")
     void shouldThrowExceptionWhenOrderNotFound() {
-        // Arrange
         when(orderRepository.findById(command.getOrderId()))
             .thenReturn(Optional.empty());
         
-        // Act & Assert
         OrderNotFoundException exception = assertThrows(
             OrderNotFoundException.class,
             () -> useCase.execute(command)
@@ -177,11 +145,10 @@ class AnalyzeRiskUseCaseTest {
     @Test
     @DisplayName("Deve lançar exceção quando pedido não está PAID")
     void shouldThrowExceptionWhenOrderNotPaid() {
-        // Arrange
         Order pendingOrder = Order.builder()
             .id(paidOrder.getId())
             .orderNumber(paidOrder.getOrderNumber())
-            .status(OrderStatus.PENDING) // Não está pago
+            .status(OrderStatus.PENDING)
             .customerId(paidOrder.getCustomerId())
             .customerName(paidOrder.getCustomerName())
             .customerEmail(paidOrder.getCustomerEmail())
@@ -195,7 +162,6 @@ class AnalyzeRiskUseCaseTest {
         when(orderRepository.findById(command.getOrderId()))
             .thenReturn(Optional.of(pendingOrder));
         
-        // Act & Assert
         IllegalStateException exception = assertThrows(
             IllegalStateException.class,
             () -> useCase.execute(command)
@@ -209,7 +175,6 @@ class AnalyzeRiskUseCaseTest {
     @Test
     @DisplayName("Deve manter PENDING quando análise de risco falha (fallback gracioso)")
     void shouldKeepPendingWhenRiskAnalysisFails() {
-        // Arrange
         when(orderRepository.findById(command.getOrderId()))
             .thenReturn(Optional.of(paidOrder));
         when(riskAnalysisPort.analyzeRisk(any(RiskAnalysisRequest.class)))
@@ -217,20 +182,17 @@ class AnalyzeRiskUseCaseTest {
         when(orderRepository.save(any(Order.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
         
-        // Act
         Order updatedOrder = useCase.execute(command);
         
-        // Assert
         assertNotNull(updatedOrder);
-        assertEquals(RiskLevel.PENDING, updatedOrder.getRiskLevel()); // Mantém PENDING
+        assertEquals(RiskLevel.PENDING, updatedOrder.getRiskLevel());
         verify(riskAnalysisPort, times(1)).analyzeRisk(any(RiskAnalysisRequest.class));
-        verify(orderRepository, times(1)).save(any(Order.class)); // Ainda persiste (pode ter outras mudanças)
+        verify(orderRepository, times(1)).save(any(Order.class));
     }
     
     @Test
     @DisplayName("Deve construir RiskAnalysisRequest corretamente")
     void shouldBuildRiskAnalysisRequestCorrectly() {
-        // Arrange
         RiskAnalysisResult result = new RiskAnalysisResult(
             RiskLevel.LOW,
             null,
@@ -245,10 +207,8 @@ class AnalyzeRiskUseCaseTest {
         when(orderRepository.save(any(Order.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
         
-        // Act
         useCase.execute(command);
         
-        // Assert
         verify(riskAnalysisPort, times(1)).analyzeRisk(argThat(request ->
             request.orderId().equals(paidOrder.getId()) &&
             request.orderAmount().equals(paidOrder.getTotalAmount()) &&

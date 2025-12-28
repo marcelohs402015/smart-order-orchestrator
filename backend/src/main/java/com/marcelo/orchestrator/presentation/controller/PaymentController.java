@@ -26,13 +26,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * REST controller for payment-related operations.
- *
- * <p>Exposes an endpoint to check the current status of a payment in the
- * external gateway (AbacatePay). This will be used by the frontend to
- * re-check the status after a manual action in the gateway dashboard.</p>
- */
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/payments")
@@ -46,22 +40,7 @@ public class PaymentController {
     private final EventPublisherPort eventPublisher;
     private final AnalyzeRiskUseCase analyzeRiskUseCase;
 
-    /**
-     * Checks the current status of a payment in the external gateway and updates
-     * the order in the database if the status has changed.
-     *
-     * <p>This endpoint performs two operations:
-     * <ol>
-     *   <li>Queries the external gateway (AbacatePay) for the current payment status</li>
-     *   <li>If an order exists with this paymentId and the status is different, updates the order</li>
-     * </ol>
-     * 
-     * <p>This ensures the database is always synchronized with the payment gateway status
-     * whenever this endpoint is consumed.</p>
-     *
-     * @param paymentId ID of the payment in AbacatePay (e.g. bill_xxxxx)
-     * @return mapped payment status
-     */
+    
     @GetMapping("/{paymentId}/status")
     @Operation(
         summary = "Check payment status",
@@ -77,10 +56,10 @@ public class PaymentController {
     ) {
         log.info("Checking payment status via API for paymentId={}", paymentId);
         
-        // 1. Consultar status no gateway externo
+        
         PaymentStatus gatewayStatus = paymentGatewayPort.checkPaymentStatus(paymentId);
         
-        // 2. Buscar pedido pelo paymentId e atualizar se status for diferente
+        
         orderRepository.findByPaymentId(paymentId).ifPresent(order -> {
             PaymentStatus currentOrderStatus = mapOrderStatusToPaymentStatus(order.getStatus());
             
@@ -88,16 +67,16 @@ public class PaymentController {
                 log.info("Payment status changed for order {}. Current: {}, New: {}. Updating order.",
                     order.getId(), currentOrderStatus, gatewayStatus);
                 
-                // Salvar status anterior para verificar se mudou para PAID
+                
                 boolean wasPaid = order.isPaid();
                 
                 updateOrderStatus(order, gatewayStatus);
                 Order updatedOrder = orderRepository.save(order);
                 
-                // Publicar evento no Kafka se status mudou para PAID
+                
                 if (!wasPaid && updatedOrder.isPaid()) {
                     publishPaymentProcessedEvent(updatedOrder);
-                    // Após confirmar pagamento, disparar análise de risco se ainda estiver PENDING
+                    
                     triggerRiskAnalysisIfNeeded(updatedOrder);
                 }
                 
@@ -111,9 +90,7 @@ public class PaymentController {
         return ResponseEntity.ok(response);
     }
     
-    /**
-     * Mapeia OrderStatus do domínio para PaymentStatus.
-     */
+    
     private PaymentStatus mapOrderStatusToPaymentStatus(com.marcelo.orchestrator.domain.model.OrderStatus orderStatus) {
         return switch (orderStatus) {
             case PAID -> PaymentStatus.SUCCESS;
@@ -124,9 +101,7 @@ public class PaymentController {
         };
     }
     
-    /**
-     * Atualiza o status do pedido baseado no status do pagamento.
-     */
+    
     private void updateOrderStatus(Order order, PaymentStatus paymentStatus) {
         switch (paymentStatus) {
             case SUCCESS -> {
@@ -140,37 +115,27 @@ public class PaymentController {
                 }
             }
             case PENDING, REFUNDED -> {
-                // Mantém status atual para PENDING e REFUNDED
+                
                 log.debug("Payment status is {} for order {}. Keeping current order status {}.",
                     paymentStatus, order.getId(), order.getStatus());
             }
         }
     }
     
-    /**
-     * Publica PaymentProcessedEvent no Kafka quando status muda para PAID.
-     * 
-     * <p>Padrão: Fail-Safe - Se publicação falhar, não interrompe fluxo principal.</p>
-     */
+    
     private void publishPaymentProcessedEvent(Order order) {
         try {
             PaymentProcessedEvent event = PaymentProcessedEvent.fromOrder(order);
             eventPublisher.publish(event);
             log.info("PaymentProcessedEvent published for order {} (status: PAID)", order.getId());
         } catch (Exception e) {
-            // Padrão: Fail-Safe - loga erro mas não lança exceção
+            
             log.error("Failed to publish PaymentProcessedEvent for order {}: {}", 
                 order.getId(), e.getMessage(), e);
         }
     }
 
-    /**
-     * Refreshes payment status for a given order by querying the external gateway
-     * and updating the order accordingly.
-     *
-     * <p>This endpoint will be used by the frontend after the user confirms a payment
-     * in the AbacatePay dashboard.</p>
-     */
+    
     @PostMapping("/orders/{orderId}/refresh-status")
     @Operation(
         summary = "Refresh payment status for order",
@@ -187,16 +152,13 @@ public class PaymentController {
         log.info("Refreshing payment status for order {}", orderId);
         Order updatedOrder = refreshPaymentStatusUseCase.execute(orderId);
         
-        // Se o pagamento foi confirmado e o risco ainda está PENDING, disparamos análise de risco
+        
         triggerRiskAnalysisIfNeeded(updatedOrder);
         
         return ResponseEntity.ok(OrderResponse.from(updatedOrder));
     }
     
-    /**
-     * Dispara análise de risco via IA se o pedido estiver em estado adequado
-     * e ainda não tiver sido classificado (riskLevel = PENDING).
-     */
+    
     private void triggerRiskAnalysisIfNeeded(Order order) {
         if (order == null) {
             return;
@@ -207,7 +169,7 @@ public class PaymentController {
                 log.info("Triggering risk analysis after payment confirmation for order {}", order.getId());
                 AnalyzeRiskCommand command = AnalyzeRiskCommand.builder()
                     .orderId(order.getId())
-                    .paymentMethod("PIX") // Para fins de contexto; em cenários reais viria do fluxo de pagamento
+                    .paymentMethod("PIX") 
                     .build();
                 analyzeRiskUseCase.execute(command);
             } catch (Exception e) {

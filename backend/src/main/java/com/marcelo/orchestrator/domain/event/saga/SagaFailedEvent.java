@@ -12,21 +12,21 @@ import java.util.UUID;
 public class SagaFailedEvent implements DomainEvent {
     
     private final UUID eventId;
-    private final UUID aggregateId; // Order ID (pode ser null se falhou antes de criar pedido)
+    private final UUID aggregateId; 
     private final LocalDateTime occurredAt;
     private final String eventType = "SagaFailed";
     
     private final UUID sagaId;
-    private final UUID orderId; // null se falhou antes de criar pedido
+    private final UUID orderId; 
     private final String failureReason;
-    private final String failedStep; // "ORDER_CREATED", "PAYMENT_PROCESSED", etc.
-    private final boolean compensated; // true se compensação foi executada
+    private final String failedStep; 
+    private final boolean compensated; 
     
     public static SagaFailedEvent of(UUID sagaId, UUID orderId, String failureReason, 
                                      String failedStep, boolean compensated) {
         return SagaFailedEvent.builder()
             .eventId(UUID.randomUUID())
-            .aggregateId(orderId) // Pode ser null
+            .aggregateId(orderId) 
             .occurredAt(LocalDateTime.now())
             .sagaId(sagaId)
             .orderId(orderId)

@@ -39,7 +39,7 @@ public class OrderSagaOrchestrator {
     private final EventPublisherPort eventPublisher;
     
     public OrderSagaResult execute(OrderSagaCommand command) {
-        // Padrão: Idempotência - Verificar se saga já foi executada
+        
         if (command.getIdempotencyKey() != null && !command.getIdempotencyKey().isBlank()) {
             Optional<SagaExecutionRepositoryPort.SagaExecution> existingSaga = sagaRepository
                 .findByIdempotencyKey(command.getIdempotencyKey());
@@ -49,7 +49,7 @@ public class OrderSagaOrchestrator {
                 log.info("Found existing saga with idempotency key: {} - Status: {}", 
                     command.getIdempotencyKey(), saga.status());
                 
-                // Se já completou, retornar resultado anterior
+                
                 if (saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.COMPLETED && saga.orderId() != null) {
                     Order order = orderRepository.findById(saga.orderId())
                         .orElseThrow(() -> new OrderNotFoundException("Order not found for completed saga: " + saga.orderId()));
@@ -58,7 +58,7 @@ public class OrderSagaOrchestrator {
                     return OrderSagaResult.success(order, saga.id());
                 }
                 
-                // Se está em progresso ou falhou mas pode retry, retornar status atual
+                
                 if (saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.STARTED ||
                     saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.ORDER_CREATED ||
                     saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.PAYMENT_PROCESSED ||
@@ -67,49 +67,49 @@ public class OrderSagaOrchestrator {
                     return OrderSagaResult.inProgress(saga.id());
                 }
                 
-                // Se falhou e foi compensada, pode tentar novamente (nova saga)
-                // Mas por segurança, retornamos erro para evitar loops
+                
+                
                 if (saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.COMPENSATED ||
                     saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.FAILED) {
                     log.warn("Previous saga failed for idempotency key: {}. Creating new saga.", 
                         command.getIdempotencyKey());
-                    // Continua para criar nova saga (pode ser que queira retry)
+                    
                 }
             }
         }
         
-        // Iniciar nova saga (ou retry após falha)
-        // IMPORTANTE: Tratar race condition - se duas requisições com mesma idempotencyKey
-        // chegarem simultaneamente, apenas uma deve criar a saga
+        
+        
+        
         SagaExecutionRepositoryPort.SagaExecution saga = startSagaSafely(command.getIdempotencyKey());
         log.info("Starting new order saga: {} (idempotency key: {})", 
             saga.id(), command.getIdempotencyKey());
         
         try {
-            // Step 1: Criar pedido
+            
             Order order = executeStep1_CreateOrder(command, saga);
-            saga = sagaRepository.findById(saga.id()).orElse(saga); // Recarregar saga atualizada
+            saga = sagaRepository.findById(saga.id()).orElse(saga); 
             
-            // Step 2: Processar pagamento
+            
             Order paidOrder = executeStep2_ProcessPayment(command, order, saga);
-            saga = sagaRepository.findById(saga.id()).orElse(saga); // Recarregar saga atualizada
+            saga = sagaRepository.findById(saga.id()).orElse(saga); 
             
-            // Step 3: Analisar risco (apenas se pagamento sucedeu)
+            
             if (paidOrder.isPaid()) {
                 Order analyzedOrder = executeStep3_AnalyzeRisk(command, paidOrder, saga);
-                saga = sagaRepository.findById(saga.id()).orElse(saga); // Recarregar saga atualizada
+                saga = sagaRepository.findById(saga.id()).orElse(saga); 
                 saga = completeSaga(saga, analyzedOrder);
                 
-                // Padrão: Event-Driven Architecture - Publica evento de sucesso
+                
                 publishSagaCompletedEvent(saga, analyzedOrder);
                 
                 return OrderSagaResult.success(analyzedOrder, saga.id());
             } else if (paidOrder.getStatus() == OrderStatus.PAYMENT_PENDING) {
-                // Pagamento ainda pendente: não compensamos, retornamos estado intermediário
+                
                 log.info("Saga finished with payment pending for order {}. SagaId={}", order.getId(), saga.id());
                 return OrderSagaResult.inProgress(saga.id(), paidOrder);
             } else {
-                // Compensação: cancelar pedido se pagamento falhou
+                
                 saga = compensate(saga, paidOrder, "Payment failed");
                 return OrderSagaResult.failed(paidOrder, saga.id(), "Payment failed");
             }
@@ -136,7 +136,7 @@ public class OrderSagaOrchestrator {
             
             log.info("Step 1 completed: Order created - {}", order.getId());
             
-            // Padrão: Event-Driven Architecture - Publica evento de criação
+            
             publishOrderCreatedEvent(order, updatedSaga.id());
             
             return order;
@@ -165,7 +165,7 @@ public class OrderSagaOrchestrator {
             
             log.info("Step 2 completed: Payment processed - Status: {}", paidOrder.getStatus());
             
-            // Padrão: Event-Driven Architecture - Publica evento de pagamento (sucesso ou falha)
+            
             publishPaymentProcessedEvent(paidOrder, updatedSaga.id());
             
             return paidOrder;
@@ -183,7 +183,7 @@ public class OrderSagaOrchestrator {
         SagaExecutionRepositoryPort.SagaExecution updatedSaga = startStep(saga, "RISK_ANALYZED");
         
         try {
-            // Análise de risco pode falhar, mas não é crítica
+            
             Order analyzedOrder = analyzeRiskUseCase.execute(command.toAnalyzeRiskCommand(paidOrder.getId()));
             updatedSaga = completeStep(updatedSaga, "RISK_ANALYZED", true, null);
             updatedSaga = updateSagaStatus(updatedSaga, SagaExecutionRepositoryPort.SagaExecution.SagaStatus.RISK_ANALYZED);
@@ -192,10 +192,10 @@ public class OrderSagaOrchestrator {
             return analyzedOrder;
             
         } catch (Exception e) {
-            // Análise de risco falhou, mas não compensamos (não é crítica)
+            
             log.warn("Risk analysis failed, but continuing: {}", e.getMessage());
             updatedSaga = completeStep(updatedSaga, "RISK_ANALYZED", false, e.getMessage());
-            // Retorna pedido mesmo sem análise de risco
+            
             return paidOrder;
         }
     }
@@ -223,7 +223,7 @@ public class OrderSagaOrchestrator {
         
         updatedSaga = sagaRepository.save(updatedSaga);
         
-        // Padrão: Event-Driven Architecture - Publica evento de falha
+        
         publishSagaFailedEvent(updatedSaga, order, reason, failedStep, compensated);
         
         return updatedSaga;
@@ -235,20 +235,20 @@ public class OrderSagaOrchestrator {
         }
         
         try {
-            // Se já é PAYMENT_FAILED, manter o status (já foi salvo pelo ProcessPaymentUseCase)
+            
             if (order.isPaymentFailed()) {
-                // Status já está correto (PAYMENT_FAILED), apenas garantir que está salvo
+                
                 orderRepository.save(order);
                 log.info("Order {} has PAYMENT_FAILED status - maintaining status", order.getId());
                 return true;
             } else if (order.isPending()) {
-                // Outros tipos de falha (não relacionadas a pagamento) - cancelar
+                
                 order.updateStatus(OrderStatus.CANCELED);
                 orderRepository.save(order);
                 log.info("Order {} cancelled due to failure", order.getId());
                 return true;
             }
-            // Se já é CANCELED, não fazer nada
+            
             return false;
         } catch (Exception e) {
             log.error("Failed to compensate order {}: {}", order.getId(), e.getMessage());
@@ -262,7 +262,7 @@ public class OrderSagaOrchestrator {
             eventPublisher.publish(event);
             log.debug("OrderCreatedEvent published for order {}", order.getId());
         } catch (Exception e) {
-            // Padrão: Fail-Safe - loga erro mas não lança exceção
+            
             log.error("Failed to publish OrderCreatedEvent: {}", e.getMessage(), e);
         }
     }
@@ -320,8 +320,8 @@ public class OrderSagaOrchestrator {
             );
             return sagaRepository.save(saga);
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            // Race condition: outra thread já criou saga com mesma idempotencyKey
-            // Verificar novamente e retornar a saga existente
+            
+            
             log.warn("Race condition detected for idempotency key: {}. Another thread already created the saga.", 
                 idempotencyKey);
             
@@ -335,7 +335,7 @@ public class OrderSagaOrchestrator {
                 }
             }
             
-            // Se não encontrou, relançar exceção (erro inesperado)
+            
             throw new DomainException("Failed to create saga and could not find existing saga", e);
         }
     }
@@ -416,7 +416,7 @@ public class OrderSagaOrchestrator {
             boolean success, String errorMessage) {
         LocalDateTime stepCompletedAt = LocalDateTime.now();
         
-        // Encontrar o step atual e atualizá-lo
+        
         List<SagaExecutionRepositoryPort.SagaStep> updatedSteps = saga.steps().stream()
             .map(step -> {
                 if (step.stepName().equals(stepName) && step.status() == SagaExecutionRepositoryPort.SagaStep.StepStatus.STARTED) {

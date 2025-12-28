@@ -13,7 +13,7 @@ import java.util.UUID;
 public class SagaCompletedEvent implements DomainEvent {
     
     private final UUID eventId;
-    private final UUID aggregateId; // Order ID
+    private final UUID aggregateId; 
     private final LocalDateTime occurredAt;
     private final String eventType = "SagaCompleted";
     
@@ -21,7 +21,7 @@ public class SagaCompletedEvent implements DomainEvent {
     private final UUID sagaId;
     private final String orderStatus;
     private final String riskLevel;
-    private final Long durationMs; // Duração total da saga em milissegundos
+    private final Long durationMs; 
     
     public static SagaCompletedEvent from(Order order, UUID sagaId, Long durationMs) {
         return SagaCompletedEvent.builder()

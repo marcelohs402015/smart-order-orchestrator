@@ -23,21 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Testes unitários para KafkaEventPublisherAdapter.
- * 
- * <p>Testa a publicação de eventos no Kafka, garantindo que:</p>
- * <ul>
- *   <li>Eventos são publicados no tópico correto</li>
- *   <li>Headers Kafka são incluídos corretamente</li>
- *   <li>Fail-safe funciona (não lança exceção em caso de erro)</li>
- *   <li>Mapeamento de tipos de eventos para tópicos está correto</li>
- * </ul>
- * 
- * <p>Padrão: Unit Testing - testa apenas a lógica do adapter, mockando KafkaTemplate.</p>
- * 
- * @author Marcelo
- */
+
 @ExtendWith(MockitoExtension.class)
 @DisplayName("KafkaEventPublisherAdapter Tests")
 class KafkaEventPublisherAdapterTest {
@@ -54,7 +40,7 @@ class KafkaEventPublisherAdapterTest {
     
     @BeforeEach
     void setUp() {
-        // Configurar tópicos via reflection (simula @Value injection)
+        
         ReflectionTestUtils.setField(adapter, "orderCreatedTopic", "order-created");
         ReflectionTestUtils.setField(adapter, "paymentProcessedTopic", "payment-processed");
         ReflectionTestUtils.setField(adapter, "sagaCompletedTopic", "saga-completed");
@@ -81,13 +67,13 @@ class KafkaEventPublisherAdapterTest {
     @Test
     @DisplayName("Deve publicar evento único com sucesso")
     void shouldPublishEventSuccessfully() {
-        // Arrange
+        
         when(kafkaTemplate.send(any(Message.class))).thenReturn(null);
         
-        // Act
+        
         adapter.publish(event);
         
-        // Assert
+        
         ArgumentCaptor<Message<Object>> messageCaptor = ArgumentCaptor.forClass(Message.class);
         verify(kafkaTemplate, times(1)).send(messageCaptor.capture());
         
@@ -104,13 +90,13 @@ class KafkaEventPublisherAdapterTest {
     @Test
     @DisplayName("Deve usar aggregateId como key da mensagem")
     void shouldUseAggregateIdAsKey() {
-        // Arrange
+        
         when(kafkaTemplate.send(any(Message.class))).thenReturn(null);
         
-        // Act
+        
         adapter.publish(event);
         
-        // Assert
+        
         ArgumentCaptor<Message<Object>> messageCaptor = ArgumentCaptor.forClass(Message.class);
         verify(kafkaTemplate).send(messageCaptor.capture());
         
@@ -122,13 +108,13 @@ class KafkaEventPublisherAdapterTest {
     @Test
     @DisplayName("Deve mapear corretamente tipo de evento para tópico")
     void shouldMapEventTypeToCorrectTopic() {
-        // Arrange
+        
         when(kafkaTemplate.send(any(Message.class))).thenReturn(null);
         
-        // Act
+        
         adapter.publish(event);
         
-        // Assert
+        
         ArgumentCaptor<Message<Object>> messageCaptor = ArgumentCaptor.forClass(Message.class);
         verify(kafkaTemplate).send(messageCaptor.capture());
         
@@ -140,13 +126,13 @@ class KafkaEventPublisherAdapterTest {
     @Test
     @DisplayName("Deve incluir todos os headers Kafka necessários")
     void shouldIncludeAllKafkaHeaders() {
-        // Arrange
+        
         when(kafkaTemplate.send(any(Message.class))).thenReturn(null);
         
-        // Act
+        
         adapter.publish(event);
         
-        // Assert
+        
         ArgumentCaptor<Message<Object>> messageCaptor = ArgumentCaptor.forClass(Message.class);
         verify(kafkaTemplate).send(messageCaptor.capture());
         
@@ -163,21 +149,21 @@ class KafkaEventPublisherAdapterTest {
     @Test
     @DisplayName("Deve logar erro mas não lançar exceção em caso de falha (fail-safe)")
     void shouldNotThrowExceptionOnFailure() {
-        // Arrange
+        
         when(kafkaTemplate.send(any(Message.class)))
             .thenThrow(new RuntimeException("Kafka connection failed"));
         
-        // Act & Assert - não deve lançar exceção
+        
         adapter.publish(event);
         
-        // Verificar que tentou publicar
+        
         verify(kafkaTemplate, times(1)).send(any(Message.class));
     }
     
     @Test
     @DisplayName("Deve publicar batch de eventos")
     void shouldPublishBatchOfEvents() {
-        // Arrange
+        
         when(kafkaTemplate.send(any(Message.class))).thenReturn(null);
         
         var event2 = OrderCreatedEvent.builder()
@@ -194,20 +180,20 @@ class KafkaEventPublisherAdapterTest {
             .sagaId(UUID.randomUUID())
             .build();
         
-        // Act
+        
         adapter.publishBatch(java.util.List.of(event, event2));
         
-        // Assert
+        
         verify(kafkaTemplate, times(2)).send(any(Message.class));
     }
     
     @Test
     @DisplayName("Deve usar eventId como key quando aggregateId for null")
     void shouldUseEventIdAsKeyWhenAggregateIdIsNull() {
-        // Arrange
+        
         var eventWithoutAggregateId = OrderCreatedEvent.builder()
             .eventId(UUID.randomUUID())
-            .aggregateId(null) // null aggregateId
+            .aggregateId(null) 
             .occurredAt(LocalDateTime.now())
             .orderId(orderId)
             .orderNumber("ORD-1234567890")
@@ -221,10 +207,10 @@ class KafkaEventPublisherAdapterTest {
         
         when(kafkaTemplate.send(any(Message.class))).thenReturn(null);
         
-        // Act
+        
         adapter.publish(eventWithoutAggregateId);
         
-        // Assert
+        
         ArgumentCaptor<Message<Object>> messageCaptor = ArgumentCaptor.forClass(Message.class);
         verify(kafkaTemplate).send(messageCaptor.capture());
         

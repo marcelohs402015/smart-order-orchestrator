@@ -45,7 +45,7 @@ public class KafkaEventPublisherAdapter implements EventPublisherPort {
             log.debug("Publishing event to Kafka topic '{}': {} (aggregateId: {}, eventId: {})", 
                 topic, event.getEventType(), event.getAggregateId(), event.getEventId());
             
-            // Criar mensagem com headers
+            
             var message = MessageBuilder
                 .withPayload(event)
                 .setHeader(KafkaHeaders.TOPIC, topic)
@@ -59,14 +59,14 @@ public class KafkaEventPublisherAdapter implements EventPublisherPort {
                 .setHeader("occurredAt", event.getOccurredAt().toString())
                 .build();
             
-            // Publicar de forma assíncrona (não bloqueia)
+            
             kafkaTemplate.send(message);
             
             log.info("Event published successfully to Kafka: {} [{}] → topic: {}", 
                 event.getEventType(), event.getEventId(), topic);
                 
         } catch (Exception e) {
-            // Padrão: Fail-Safe - não interrompe fluxo principal
+            
             log.error("Failed to publish event {} to Kafka: {}", 
                 event.getEventType(), e.getMessage(), e);
         }
@@ -78,7 +78,7 @@ public class KafkaEventPublisherAdapter implements EventPublisherPort {
             log.debug("Publishing {} events to Kafka in batch", events.size());
             
             for (T event : events) {
-                publish(event); // Reutiliza lógica de publicação única
+                publish(event); 
             }
             
             log.info("Batch of {} events published successfully to Kafka", events.size());

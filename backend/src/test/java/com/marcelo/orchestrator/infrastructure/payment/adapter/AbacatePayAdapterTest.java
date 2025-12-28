@@ -25,19 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-/**
- * Testes unitários para AbacatePayAdapter.
- * 
- * <p>Testa o adaptador que integra com AbacatePay usando mocks do WebClient.
- * Foca em validar conversão de dados e tratamento de erros.</p>
- * 
- * <h3>Estratégia de Teste:</h3>
- * <ul>
- *   <li><strong>Mocks:</strong> WebClient é mockado para não fazer chamadas reais</li>
- *   <li><strong>Isolamento:</strong> Testa apenas lógica do adapter, não API real</li>
- *   <li><strong>Cenários:</strong> Sucesso, falha de API, timeout, etc.</li>
- * </ul>
- */
+
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AbacatePayAdapter Tests")
 class AbacatePayAdapterTest {
@@ -54,7 +42,6 @@ class AbacatePayAdapterTest {
     @Mock
     private WebClient.ResponseSpec responseSpec;
     
-    @Mock
     private java.util.concurrent.Executor virtualThreadExecutor;
     
     private AbacatePayAdapter adapter;
@@ -63,12 +50,14 @@ class AbacatePayAdapterTest {
     
     @BeforeEach
     void setUp() {
+        virtualThreadExecutor = Runnable::run;
+        
         adapter = new AbacatePayAdapter(
             abacatePayWebClient,
             virtualThreadExecutor
         );
         
-        // Criar PaymentRequest de teste
+        
         testPaymentRequest = new PaymentRequest(
             UUID.randomUUID(),
             BigDecimal.valueOf(100.50),
@@ -81,26 +70,26 @@ class AbacatePayAdapterTest {
     @Test
     @DisplayName("Deve processar pagamento com sucesso")
     void shouldProcessPaymentSuccessfully() {
-        // Arrange - Criar Records com construtores (Records são imutáveis)
+        
         AbacatePayBillingResponse.AbacatePayBillingData data = new AbacatePayBillingResponse.AbacatePayBillingData(
-            "bill_123456",                    // id
-            "https://abacatepay.com/pay/123", // url
-            10050,                            // amount (em centavos)
-            "PAID",                           // status
-            true,                             // devMode
-            new String[]{"PIX"},             // methods
-            "ONE_TIME",                       // frequency
-            null,                             // customer (não necessário para este teste)
-            LocalDateTime.now(),              // createdAt
-            LocalDateTime.now()               // updatedAt
+            "bill_123456",
+            "https://example.com/payment",
+            10050,
+            "PAID",
+            true,
+            new String[]{"PIX"},
+            "ONE_TIME",
+            null,
+            LocalDateTime.now(),
+            LocalDateTime.now()
         );
         
         AbacatePayBillingResponse response = new AbacatePayBillingResponse(
-            data,   // data
-            null    // error
+            data,   
+            null    
         );
         
-        // Mock WebClient chain
+        
         when(abacatePayWebClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         doReturn(requestBodySpec).when(requestBodySpec).bodyValue(any());
@@ -108,10 +97,10 @@ class AbacatePayAdapterTest {
         when(responseSpec.bodyToMono(AbacatePayBillingResponse.class))
             .thenReturn(Mono.just(response));
         
-        // Act
+        
         PaymentResult result = adapter.processPayment(testPaymentRequest);
         
-        // Assert
+        
         assertNotNull(result);
         assertEquals("bill_123456", result.paymentId());
         assertEquals(PaymentStatus.SUCCESS, result.status());
@@ -121,10 +110,7 @@ class AbacatePayAdapterTest {
     @Test
     @DisplayName("Deve tratar erro da API do AbacatePay graciosamente")
     void shouldHandleApiErrorGracefully() {
-        // Arrange
-        WebClientResponseException exception = mock(WebClientResponseException.class);
-        when(exception.getStatusCode()).thenReturn(org.springframework.http.HttpStatus.BAD_REQUEST);
-        when(exception.getResponseBodyAsString()).thenReturn("Invalid request");
+        RuntimeException exception = new RuntimeException("API Error");
         
         when(abacatePayWebClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
@@ -133,10 +119,8 @@ class AbacatePayAdapterTest {
         when(responseSpec.bodyToMono(AbacatePayBillingResponse.class))
             .thenReturn(Mono.error(exception));
         
-        // Act
         PaymentResult result = adapter.processPayment(testPaymentRequest);
         
-        // Assert
         assertNotNull(result);
         assertTrue(result.isFailed());
         assertEquals(PaymentStatus.FAILED, result.status());
