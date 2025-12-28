@@ -1,0 +1,48 @@
+# ============================================================================
+# Prometheus Configuration - Smart Order Orchestrator
+# ============================================================================
+# Configuração do Prometheus para coletar métricas da aplicação Spring Boot
+# e expor dashboards no Grafana.
+# ============================================================================
+
+global:
+  scrape_interval: 15s      # Coleta métricas a cada 15 segundos
+  evaluation_interval: 15s  # Avalia regras a cada 15 segundos
+  external_labels:
+    cluster: 'smart-order-orchestrator'
+    environment: 'development'
+
+# ============================================================================
+# Scrape Configurations
+# ============================================================================
+# Define de onde o Prometheus deve coletar métricas.
+# A aplicação Spring Boot expõe métricas em /actuator/prometheus
+# ============================================================================
+scrape_configs:
+  # ========================================================================
+  # Smart Order Orchestrator Application
+  # ========================================================================
+  - job_name: 'smart-order-orchestrator'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['host.docker.internal:8081']  # Acesso ao host do Docker
+        labels:
+          application: 'smart-order-orchestrator'
+          service: 'orchestrator'
+    
+    # Relabeling para adicionar labels customizados
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'smart-order-orchestrator:8081'
+
+  # ========================================================================
+  # Prometheus Self-Monitoring
+  # ========================================================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+

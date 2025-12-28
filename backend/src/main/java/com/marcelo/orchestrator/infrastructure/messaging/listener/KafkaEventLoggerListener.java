@@ -1,5 +1,7 @@
 package com.marcelo.orchestrator.infrastructure.messaging.listener;
 
+import com.marcelo.orchestrator.infrastructure.messaging.metrics.KafkaConsumerMetrics;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -7,6 +9,9 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+import java.time.Instant;
 
 /**
  * Listener simples para logar mensagens recebidas dos tópicos Kafka.
@@ -37,7 +42,10 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "app.message.broker.type", havingValue = "KAFKA")
+@RequiredArgsConstructor
 public class KafkaEventLoggerListener {
+
+    private final KafkaConsumerMetrics metrics;
 
     /**
      * Listener que consome eventos de todos os tópicos da saga e loga no console.
@@ -67,17 +75,40 @@ public class KafkaEventLoggerListener {
             @Header(name = "eventId", required = false) String eventId,
             @Header(name = "aggregateId", required = false) String aggregateId) {
 
-        log.info(
-            "KAFKA CONSUMER - topic={}, partition={}, offset={}, key={}, eventType={}, eventId={}, aggregateId={}, payload={}",
-            record.topic(),
-            record.partition(),
-            record.offset(),
-            record.key(),
-            eventType,
-            eventId,
-            aggregateId,
-            payload
-        );
+        final Instant startTime = Instant.now();
+
+        try {
+            // Registra métricas de consumo
+            metrics.recordMessageConsumed(
+                    record.topic(),
+                    eventType,
+                    record.partition()
+            );
+
+            log.info(
+                "KAFKA CONSUMER - topic={}, partition={}, offset={}, key={}, eventType={}, eventId={}, aggregateId={}, payload={}",
+                record.topic(),
+                record.partition(),
+                record.offset(),
+                record.key(),
+                eventType,
+                eventId,
+                aggregateId,
+                payload
+            );
+
+            // Registra tempo de processamento e sucesso
+            final Duration processingTime = Duration.between(startTime, Instant.now());
+            metrics.recordProcessingTime(record.topic(), eventType, processingTime);
+            metrics.recordSuccess(record.topic(), eventType);
+
+        } catch (Exception e) {
+            // Registra erro nas métricas
+            metrics.recordError(record.topic(), eventType, e);
+            log.error("Error processing Kafka message: topic={}, eventType={}, error={}", 
+                    record.topic(), eventType, e.getMessage(), e);
+            throw e; // Re-throw para que o Kafka possa fazer retry se configurado
+        }
     }
 }
 
