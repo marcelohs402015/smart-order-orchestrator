@@ -65,6 +65,10 @@ public class SagaExecutionEntity {
     private Long durationMs;
     
     
+    @Column(name = "timeout_at")
+    private LocalDateTime timeoutAt;
+    
+    
     @OneToMany(mappedBy = "sagaExecution", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<SagaStepEntity> steps = new ArrayList<>();

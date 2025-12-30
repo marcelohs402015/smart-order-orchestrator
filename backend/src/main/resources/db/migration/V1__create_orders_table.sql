@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS saga_executions (
     error_message TEXT,
     started_at TIMESTAMP NOT NULL,
     completed_at TIMESTAMP,
+    timeout_at TIMESTAMP,
     duration_ms BIGINT,
     
     CONSTRAINT fk_saga_order FOREIGN KEY (order_id) REFERENCES orders(id)
@@ -89,6 +90,7 @@ COMMENT ON COLUMN saga_executions.idempotency_key IS 'Chave de idempotência par
 COMMENT ON COLUMN saga_executions.order_id IS 'ID do pedido associado a esta saga (FK para orders.id)';
 COMMENT ON COLUMN saga_executions.status IS 'Status atual da saga (STARTED, ORDER_CREATED, PAYMENT_PROCESSED, RISK_ANALYZED, COMPLETED, FAILED, COMPENSATED)';
 COMMENT ON COLUMN saga_executions.duration_ms IS 'Duração total da saga em milissegundos';
+COMMENT ON COLUMN saga_executions.timeout_at IS 'Data/hora de expiração da saga. Sagas expiradas devem ser compensadas';
 
 -- ============================================================================
 -- TABELA: saga_steps (Passos da Saga)

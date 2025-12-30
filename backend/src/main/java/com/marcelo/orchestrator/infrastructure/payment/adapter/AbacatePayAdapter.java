@@ -69,11 +69,40 @@ public class AbacatePayAdapter implements PaymentGatewayPort {
     @CircuitBreaker(name = "paymentGateway", fallbackMethod = "refundPaymentFallback")
     @Retry(name = "paymentGateway")
     public PaymentResult refundPayment(String paymentId, BigDecimal amount) {
-        return createFailedResult(amount, "Refund not yet implemented");
+        if (paymentId == null || paymentId.isBlank()) {
+            return createFailedResult(amount, "Payment ID cannot be null or blank");
+        }
+        
+        CompletableFuture<AbacatePayBillingResponse> future = CompletableFuture.supplyAsync(() ->
+            abacatePayWebClient
+                .post()
+                .uri("/billing/{id}/refund", paymentId)
+                .bodyValue(new java.util.HashMap<String, Object>() {{
+                    put("amount", AbacatePayBillingRequest.toCents(amount));
+                }})
+                .retrieve()
+                .bodyToMono(AbacatePayBillingResponse.class)
+                .block(), virtualThreadExecutor);
+        
+        try {
+            AbacatePayBillingResponse response = future.join();
+            if (response != null && response.isSuccess() && response.data() != null) {
+                return new PaymentResult(
+                    response.data().id(),
+                    PaymentStatus.SUCCESS,
+                    "Refund processed successfully",
+                    amount,
+                    LocalDateTime.now()
+                );
+            }
+            return createFailedResult(amount, "Refund failed: " + (response != null ? response.error() : "Unknown error"));
+        } catch (Exception e) {
+            return createFailedResult(amount, "Refund error: " + e.getMessage());
+        }
     }
     
     private PaymentResult refundPaymentFallback(String paymentId, BigDecimal amount, Exception e) {
-        return createFailedResult(amount, "Refund gateway temporarily unavailable");
+        return createFailedResult(amount, "Refund gateway temporarily unavailable (circuit breaker open)");
     }
     
     @Override

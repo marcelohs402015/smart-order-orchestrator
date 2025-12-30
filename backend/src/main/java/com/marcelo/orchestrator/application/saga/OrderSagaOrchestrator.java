@@ -13,6 +13,7 @@ import com.marcelo.orchestrator.application.exception.DomainException;
 import com.marcelo.orchestrator.application.exception.OrderNotFoundException;
 import com.marcelo.orchestrator.domain.port.EventPublisherPort;
 import com.marcelo.orchestrator.domain.port.OrderRepositoryPort;
+import com.marcelo.orchestrator.domain.port.PaymentGatewayPort;
 import com.marcelo.orchestrator.domain.port.SagaExecutionRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,86 +31,78 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrderSagaOrchestrator {
     
+    private static final int SAGA_TIMEOUT_MINUTES = 30;
+    
     private final CreateOrderUseCase createOrderUseCase;
     private final ProcessPaymentUseCase processPaymentUseCase;
     private final AnalyzeRiskUseCase analyzeRiskUseCase;
     private final OrderRepositoryPort orderRepository;
     private final SagaExecutionRepositoryPort sagaRepository;
-
+    private final PaymentGatewayPort paymentGateway;
     private final EventPublisherPort eventPublisher;
     
     public OrderSagaResult execute(OrderSagaCommand command) {
-        
         if (command.getIdempotencyKey() != null && !command.getIdempotencyKey().isBlank()) {
             Optional<SagaExecutionRepositoryPort.SagaExecution> existingSaga = sagaRepository
                 .findByIdempotencyKey(command.getIdempotencyKey());
             
             if (existingSaga.isPresent()) {
                 SagaExecutionRepositoryPort.SagaExecution saga = existingSaga.get();
-                log.info("Found existing saga with idempotency key: {} - Status: {}", 
-                    command.getIdempotencyKey(), saga.status());
-                
                 
                 if (saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.COMPLETED && saga.orderId() != null) {
-                    Order order = orderRepository.findById(saga.orderId())
-                        .orElseThrow(() -> new OrderNotFoundException("Order not found for completed saga: " + saga.orderId()));
-                    log.info("Returning existing completed saga result for idempotency key: {}", 
-                        command.getIdempotencyKey());
+                    final UUID orderId = saga.orderId();
+                    Order order = orderRepository.findById(orderId)
+                        .orElseThrow(() -> new OrderNotFoundException("Order not found for completed saga: " + orderId));
+                    log.info("Returning existing completed saga result for idempotency key: {}", command.getIdempotencyKey());
                     return OrderSagaResult.success(order, saga.id());
                 }
                 
-                
-                if (saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.STARTED ||
-                    saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.ORDER_CREATED ||
-                    saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.PAYMENT_PROCESSED ||
-                    saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.RISK_ANALYZED) {
+                if (isSagaInProgress(saga)) {
                     log.info("Saga already in progress for idempotency key: {}", command.getIdempotencyKey());
-                    return OrderSagaResult.inProgress(saga.id());
+                    Order order = saga.orderId() != null 
+                        ? orderRepository.findById(saga.orderId()).orElse(null)
+                        : null;
+                    return OrderSagaResult.inProgress(saga.id(), order);
                 }
                 
-                
+                if (isSagaExpired(saga)) {
+                    log.warn("Saga {} expired, compensating", saga.id());
+                    Order expiredOrder = saga.orderId() != null 
+                        ? orderRepository.findById(saga.orderId()).orElse(null)
+                        : null;
+                    compensate(saga, expiredOrder, "Saga expired");
+                }
                 
                 if (saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.COMPENSATED ||
                     saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.FAILED) {
-                    log.warn("Previous saga failed for idempotency key: {}. Creating new saga.", 
-                        command.getIdempotencyKey());
-                    
+                    log.warn("Previous saga {} was {} for idempotency key: {}. Creating new saga.", 
+                        saga.id(), saga.status(), command.getIdempotencyKey());
                 }
             }
         }
         
-        
-        
-        
         SagaExecutionRepositoryPort.SagaExecution saga = startSagaSafely(command.getIdempotencyKey());
-        log.info("Starting new order saga: {} (idempotency key: {})", 
-            saga.id(), command.getIdempotencyKey());
+        log.info("Starting new order saga: {} (idempotency key: {})", saga.id(), command.getIdempotencyKey());
         
         try {
-            
             Order order = executeStep1_CreateOrder(command, saga);
-            saga = sagaRepository.findById(saga.id()).orElse(saga); 
-            
+            saga = reloadSagaWithLock(saga.id());
             
             Order paidOrder = executeStep2_ProcessPayment(command, order, saga);
-            saga = sagaRepository.findById(saga.id()).orElse(saga); 
-            
+            saga = reloadSagaWithLock(saga.id());
             
             if (paidOrder.isPaid()) {
                 Order analyzedOrder = executeStep3_AnalyzeRisk(command, paidOrder, saga);
-                saga = sagaRepository.findById(saga.id()).orElse(saga); 
+                saga = reloadSagaWithLock(saga.id());
                 saga = completeSaga(saga, analyzedOrder);
-                
                 
                 publishSagaCompletedEvent(saga, analyzedOrder);
                 
                 return OrderSagaResult.success(analyzedOrder, saga.id());
             } else if (paidOrder.getStatus() == OrderStatus.PAYMENT_PENDING) {
-                
                 log.info("Saga finished with payment pending for order {}. SagaId={}", order.getId(), saga.id());
                 return OrderSagaResult.inProgress(saga.id(), paidOrder);
             } else {
-                
                 saga = compensate(saga, paidOrder, "Payment failed");
                 return OrderSagaResult.failed(paidOrder, saga.id(), "Payment failed");
             }
@@ -125,7 +118,33 @@ public class OrderSagaOrchestrator {
         }
     }
     
+    private boolean isSagaInProgress(SagaExecutionRepositoryPort.SagaExecution saga) {
+        return saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.STARTED ||
+               saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.ORDER_CREATED ||
+               saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.PAYMENT_PROCESSED ||
+               saga.status() == SagaExecutionRepositoryPort.SagaExecution.SagaStatus.RISK_ANALYZED;
+    }
+    
+    private boolean isSagaExpired(SagaExecutionRepositoryPort.SagaExecution saga) {
+        if (saga.timeoutAt() == null) {
+            return false;
+        }
+        return LocalDateTime.now().isAfter(saga.timeoutAt());
+    }
+    
+    @Transactional
+    private SagaExecutionRepositoryPort.SagaExecution reloadSagaWithLock(UUID sagaId) {
+        return sagaRepository.findByIdWithLock(sagaId)
+            .orElseThrow(() -> new DomainException("Saga not found: " + sagaId));
+    }
+    
     private Order executeStep1_CreateOrder(OrderSagaCommand command, SagaExecutionRepositoryPort.SagaExecution saga) {
+        if (isStepCompleted(saga, "ORDER_CREATED") && saga.orderId() != null) {
+            log.info("Step ORDER_CREATED already completed, returning existing order: {}", saga.orderId());
+            return orderRepository.findById(saga.orderId())
+                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + saga.orderId()));
+        }
+        
         SagaExecutionRepositoryPort.SagaExecution updatedSaga = startStep(saga, "ORDER_CREATED");
         
         try {
@@ -135,7 +154,6 @@ public class OrderSagaOrchestrator {
             updatedSaga = updateSagaStatus(updatedSaga, SagaExecutionRepositoryPort.SagaExecution.SagaStatus.ORDER_CREATED);
             
             log.info("Step 1 completed: Order created - {}", order.getId());
-            
             
             publishOrderCreatedEvent(order, updatedSaga.id());
             
@@ -151,6 +169,11 @@ public class OrderSagaOrchestrator {
     }
 
     private Order executeStep2_ProcessPayment(OrderSagaCommand command, Order order, SagaExecutionRepositoryPort.SagaExecution saga) {
+        if (isStepCompleted(saga, "PAYMENT_PROCESSED")) {
+            log.info("Step PAYMENT_PROCESSED already completed, returning existing order: {}", order.getId());
+            return order;
+        }
+        
         SagaExecutionRepositoryPort.SagaExecution updatedSaga = startStep(saga, "PAYMENT_PROCESSED");
         
         try {
@@ -164,7 +187,6 @@ public class OrderSagaOrchestrator {
             updatedSaga = updateSagaStatus(updatedSaga, SagaExecutionRepositoryPort.SagaExecution.SagaStatus.PAYMENT_PROCESSED);
             
             log.info("Step 2 completed: Payment processed - Status: {}", paidOrder.getStatus());
-            
             
             publishPaymentProcessedEvent(paidOrder, updatedSaga.id());
             
@@ -180,10 +202,14 @@ public class OrderSagaOrchestrator {
     }
     
     private Order executeStep3_AnalyzeRisk(OrderSagaCommand command, Order paidOrder, SagaExecutionRepositoryPort.SagaExecution saga) {
+        if (isStepCompleted(saga, "RISK_ANALYZED")) {
+            log.info("Step RISK_ANALYZED already completed, returning existing order: {}", paidOrder.getId());
+            return paidOrder;
+        }
+        
         SagaExecutionRepositoryPort.SagaExecution updatedSaga = startStep(saga, "RISK_ANALYZED");
         
         try {
-            
             Order analyzedOrder = analyzeRiskUseCase.execute(command.toAnalyzeRiskCommand(paidOrder.getId()));
             updatedSaga = completeStep(updatedSaga, "RISK_ANALYZED", true, null);
             updatedSaga = updateSagaStatus(updatedSaga, SagaExecutionRepositoryPort.SagaExecution.SagaStatus.RISK_ANALYZED);
@@ -192,12 +218,17 @@ public class OrderSagaOrchestrator {
             return analyzedOrder;
             
         } catch (Exception e) {
-            
             log.warn("Risk analysis failed, but continuing: {}", e.getMessage());
             updatedSaga = completeStep(updatedSaga, "RISK_ANALYZED", false, e.getMessage());
             
             return paidOrder;
         }
+    }
+    
+    private boolean isStepCompleted(SagaExecutionRepositoryPort.SagaExecution saga, String stepName) {
+        return saga.steps().stream()
+            .anyMatch(step -> step.stepName().equals(stepName) && 
+                           step.status() == SagaExecutionRepositoryPort.SagaStep.StepStatus.SUCCESS);
     }
     
     @Transactional
@@ -206,7 +237,7 @@ public class OrderSagaOrchestrator {
         log.warn("Compensating saga {} - Reason: {}", saga.id(), reason);
         
         String failedStep = saga.currentStep() != null ? saga.currentStep() : "UNKNOWN";
-        boolean compensated = compensateOrder(order);
+        boolean compensated = compensateOrder(order, saga);
         
         SagaExecutionRepositoryPort.SagaExecution updatedSaga = new SagaExecutionRepositoryPort.SagaExecution(
             saga.id(),
@@ -217,32 +248,56 @@ public class OrderSagaOrchestrator {
             reason,
             saga.startedAt(),
             LocalDateTime.now(),
+            saga.timeoutAt(),
             saga.durationMs(),
             saga.steps()
         );
         
         updatedSaga = sagaRepository.save(updatedSaga);
         
-        
         publishSagaFailedEvent(updatedSaga, order, reason, failedStep, compensated);
         
         return updatedSaga;
     }
     
-    private boolean compensateOrder(Order order) {
-        if (order == null || order.isPaid()) {
+    private boolean compensateOrder(Order order, SagaExecutionRepositoryPort.SagaExecution saga) {
+        if (order == null) {
             return false;
         }
         
         try {
+            if (order.isPaid() && order.getPaymentId() != null) {
+                log.info("Order {} was paid, attempting refund for payment {}", order.getId(), order.getPaymentId());
+                try {
+                    com.marcelo.orchestrator.domain.port.PaymentResult refundResult = 
+                        paymentGateway.refundPayment(order.getPaymentId(), order.getTotalAmount());
+                    
+                    if (refundResult.status() == com.marcelo.orchestrator.domain.port.PaymentStatus.SUCCESS) {
+                        order.updateStatus(OrderStatus.CANCELED);
+                        orderRepository.save(order);
+                        log.info("Order {} refunded and cancelled successfully", order.getId());
+                        return true;
+                    } else {
+                        log.warn("Refund failed for payment {} of order {}: {}", 
+                            order.getPaymentId(), order.getId(), refundResult.message());
+                        order.updateStatus(OrderStatus.CANCELED);
+                        orderRepository.save(order);
+                        return false;
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to refund payment {} for order {}: {}", 
+                        order.getPaymentId(), order.getId(), e.getMessage());
+                    order.updateStatus(OrderStatus.CANCELED);
+                    orderRepository.save(order);
+                    return false;
+                }
+            }
             
             if (order.isPaymentFailed()) {
-                
                 orderRepository.save(order);
                 log.info("Order {} has PAYMENT_FAILED status - maintaining status", order.getId());
                 return true;
             } else if (order.isPending()) {
-                
                 order.updateStatus(OrderStatus.CANCELED);
                 orderRepository.save(order);
                 log.info("Order {} cancelled due to failure", order.getId());
@@ -262,11 +317,9 @@ public class OrderSagaOrchestrator {
             eventPublisher.publish(event);
             log.debug("OrderCreatedEvent published for order {}", order.getId());
         } catch (Exception e) {
-            
             log.error("Failed to publish OrderCreatedEvent: {}", e.getMessage(), e);
         }
     }
-    
 
     private void publishPaymentProcessedEvent(Order order, UUID sagaId) {
         try {
@@ -277,7 +330,6 @@ public class OrderSagaOrchestrator {
             log.error("Failed to publish PaymentProcessedEvent: {}", e.getMessage(), e);
         }
     }
-    
 
     private void publishSagaCompletedEvent(SagaExecutionRepositoryPort.SagaExecution saga, Order order) {
         try {
@@ -288,7 +340,6 @@ public class OrderSagaOrchestrator {
             log.error("Failed to publish SagaCompletedEvent: {}", e.getMessage(), e);
         }
     }
-    
 
     private void publishSagaFailedEvent(SagaExecutionRepositoryPort.SagaExecution saga, Order order, String reason, 
                                         String failedStep, boolean compensated) {
@@ -301,11 +352,13 @@ public class OrderSagaOrchestrator {
             log.error("Failed to publish SagaFailedEvent: {}", e.getMessage(), e);
         }
     }
-    
 
     @Transactional
     private SagaExecutionRepositoryPort.SagaExecution startSagaSafely(String idempotencyKey) {
         try {
+            LocalDateTime startedAt = LocalDateTime.now();
+            LocalDateTime timeoutAt = startedAt.plusMinutes(SAGA_TIMEOUT_MINUTES);
+            
             SagaExecutionRepositoryPort.SagaExecution saga = new SagaExecutionRepositoryPort.SagaExecution(
                 UUID.randomUUID(),
                 idempotencyKey,
@@ -313,15 +366,14 @@ public class OrderSagaOrchestrator {
                 SagaExecutionRepositoryPort.SagaExecution.SagaStatus.STARTED,
                 null,
                 null,
-                LocalDateTime.now(),
+                startedAt,
                 null,
+                timeoutAt,
                 null,
                 new java.util.ArrayList<>()
             );
             return sagaRepository.save(saga);
-        } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            
-            
+        } catch (DataIntegrityViolationException e) {
             log.warn("Race condition detected for idempotency key: {}. Another thread already created the saga.", 
                 idempotencyKey);
             
@@ -335,18 +387,11 @@ public class OrderSagaOrchestrator {
                 }
             }
             
-            
             throw new DomainException("Failed to create saga and could not find existing saga", e);
         }
     }
     
-    @Deprecated
     @Transactional
-    private SagaExecutionRepositoryPort.SagaExecution startSaga(String idempotencyKey) {
-        return startSagaSafely(idempotencyKey);
-    }
-    
-     @Transactional
     private SagaExecutionRepositoryPort.SagaExecution completeSaga(
             SagaExecutionRepositoryPort.SagaExecution saga, Order order) {
         LocalDateTime completedAt = LocalDateTime.now();
@@ -365,6 +410,7 @@ public class OrderSagaOrchestrator {
             saga.errorMessage(),
             saga.startedAt(),
             completedAt,
+            saga.timeoutAt(),
             durationMs,
             saga.steps()
         );
@@ -377,6 +423,11 @@ public class OrderSagaOrchestrator {
     @Transactional
     private SagaExecutionRepositoryPort.SagaExecution startStep(
             SagaExecutionRepositoryPort.SagaExecution saga, String stepName) {
+        if (isStepCompleted(saga, stepName)) {
+            log.debug("Step {} already completed, skipping", stepName);
+            return saga;
+        }
+        
         UUID stepId = UUID.randomUUID();
         LocalDateTime stepStartedAt = LocalDateTime.now();
         
@@ -403,6 +454,7 @@ public class OrderSagaOrchestrator {
             saga.errorMessage(),
             saga.startedAt(),
             saga.completedAt(),
+            saga.timeoutAt(),
             saga.durationMs(),
             updatedSteps
         );
@@ -415,7 +467,6 @@ public class OrderSagaOrchestrator {
             SagaExecutionRepositoryPort.SagaExecution saga, String stepName, 
             boolean success, String errorMessage) {
         LocalDateTime stepCompletedAt = LocalDateTime.now();
-        
         
         List<SagaExecutionRepositoryPort.SagaStep> updatedSteps = saga.steps().stream()
             .map(step -> {
@@ -450,6 +501,7 @@ public class OrderSagaOrchestrator {
             saga.errorMessage(),
             saga.startedAt(),
             saga.completedAt(),
+            saga.timeoutAt(),
             saga.durationMs(),
             updatedSteps
         );
@@ -469,6 +521,7 @@ public class OrderSagaOrchestrator {
             saga.errorMessage(),
             saga.startedAt(),
             saga.completedAt(),
+            saga.timeoutAt(),
             saga.durationMs(),
             saga.steps()
         );
@@ -488,10 +541,10 @@ public class OrderSagaOrchestrator {
             saga.errorMessage(),
             saga.startedAt(),
             saga.completedAt(),
+            saga.timeoutAt(),
             saga.durationMs(),
             saga.steps()
         );
         return sagaRepository.save(updatedSaga);
     }
 }
-

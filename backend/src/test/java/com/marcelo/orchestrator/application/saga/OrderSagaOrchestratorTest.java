@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,7 +26,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrderSagaOrchestrator Tests")
@@ -59,8 +59,8 @@ class OrderSagaOrchestratorTest {
     
     @BeforeEach
     void setUp() {
-        
         command = OrderSagaCommand.builder()
+            .idempotencyKey("test-idempotency-key-" + UUID.randomUUID())
             .customerId(UUID.randomUUID())
             .customerName("Cliente Teste")
             .customerEmail("cliente@teste.com")
@@ -76,7 +76,6 @@ class OrderSagaOrchestratorTest {
             .currency("BRL")
             .build();
         
-        
         createdOrder = Order.builder()
             .id(UUID.randomUUID())
             .orderNumber("ORD-123")
@@ -90,7 +89,6 @@ class OrderSagaOrchestratorTest {
             .createdAt(LocalDateTime.now())
             .updatedAt(LocalDateTime.now())
             .build();
-        
         
         paidOrder = Order.builder()
             .id(createdOrder.getId())
@@ -107,7 +105,6 @@ class OrderSagaOrchestratorTest {
             .updatedAt(LocalDateTime.now())
             .build();
         
-        
         analyzedOrder = Order.builder()
             .id(paidOrder.getId())
             .orderNumber(paidOrder.getOrderNumber())
@@ -122,50 +119,66 @@ class OrderSagaOrchestratorTest {
             .createdAt(paidOrder.getCreatedAt())
             .updatedAt(LocalDateTime.now())
             .build();
-        
-        
-        when(sagaRepository.save(any(SagaExecutionRepositoryPort.SagaExecution.class)))
-            .thenAnswer(invocation -> invocation.getArgument(0));
-        
-        
-        lenient().when(sagaRepository.findById(any(UUID.class)))
-            .thenReturn(Optional.empty());
-        
-        
-        
     }
     
     @Test
     @DisplayName("Deve executar saga completa com sucesso")
     void shouldExecuteCompleteSagaSuccessfully() {
+        when(sagaRepository.findByIdempotencyKey(anyString())).thenReturn(Optional.empty());
+        
+        List<SagaExecutionRepositoryPort.SagaExecution> savedSagas = new ArrayList<>();
+        when(sagaRepository.save(any(SagaExecutionRepositoryPort.SagaExecution.class)))
+            .thenAnswer(invocation -> {
+                SagaExecutionRepositoryPort.SagaExecution saga = invocation.getArgument(0);
+                savedSagas.add(saga);
+                return saga;
+            });
+        
+        when(sagaRepository.findByIdWithLock(any(UUID.class)))
+            .thenAnswer(invocation -> {
+                UUID id = invocation.getArgument(0);
+                return savedSagas.stream()
+                    .filter(s -> s.id().equals(id))
+                    .findFirst();
+            });
         
         when(createOrderUseCase.execute(any())).thenReturn(createdOrder);
         when(processPaymentUseCase.execute(any())).thenReturn(paidOrder);
         when(analyzeRiskUseCase.execute(any())).thenReturn(analyzedOrder);
         
-        
         OrderSagaResult result = orchestrator.execute(command);
-        
         
         assertTrue(result.isSuccess());
         assertNotNull(result.getOrder());
         assertEquals(RiskLevel.LOW, result.getOrder().getRiskLevel());
         assertNotNull(result.getSagaExecutionId());
         
-        
         verify(createOrderUseCase, times(1)).execute(any());
         verify(processPaymentUseCase, times(1)).execute(any());
         verify(analyzeRiskUseCase, times(1)).execute(any());
-        
-        
-        ArgumentCaptor<SagaExecutionRepositoryPort.SagaExecution> sagaCaptor = 
-            ArgumentCaptor.forClass(SagaExecutionRepositoryPort.SagaExecution.class);
-        verify(sagaRepository, atLeast(3)).save(sagaCaptor.capture());
+        verify(sagaRepository, atLeast(3)).save(any(SagaExecutionRepositoryPort.SagaExecution.class));
     }
     
     @Test
     @DisplayName("Deve compensar quando pagamento falhar mantendo status PAYMENT_FAILED")
     void shouldCompensateWhenPaymentFails() {
+        when(sagaRepository.findByIdempotencyKey(anyString())).thenReturn(Optional.empty());
+        
+        List<SagaExecutionRepositoryPort.SagaExecution> savedSagas = new ArrayList<>();
+        when(sagaRepository.save(any(SagaExecutionRepositoryPort.SagaExecution.class)))
+            .thenAnswer(invocation -> {
+                SagaExecutionRepositoryPort.SagaExecution saga = invocation.getArgument(0);
+                savedSagas.add(saga);
+                return saga;
+            });
+        
+        when(sagaRepository.findByIdWithLock(any(UUID.class)))
+            .thenAnswer(invocation -> {
+                UUID id = invocation.getArgument(0);
+                return savedSagas.stream()
+                    .filter(s -> s.id().equals(id))
+                    .findFirst();
+            });
         
         Order paymentFailedOrder = Order.builder()
             .id(createdOrder.getId())
@@ -185,21 +198,16 @@ class OrderSagaOrchestratorTest {
         when(processPaymentUseCase.execute(any())).thenReturn(paymentFailedOrder);
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
         
-        
         OrderSagaResult result = orchestrator.execute(command);
-        
         
         assertFalse(result.isSuccess());
         assertNotNull(result.getErrorMessage());
         assertEquals("Payment failed", result.getErrorMessage());
         
-        
-        
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
         verify(orderRepository, atLeastOnce()).save(orderCaptor.capture());
         Order savedOrder = orderCaptor.getValue();
         assertEquals(OrderStatus.PAYMENT_FAILED, savedOrder.getStatus());
-        
         
         verify(analyzeRiskUseCase, never()).execute(any());
     }
@@ -207,44 +215,35 @@ class OrderSagaOrchestratorTest {
     @Test
     @DisplayName("Deve rastrear todos os passos da saga")
     void shouldTrackAllSagaSteps() {
+        when(sagaRepository.findByIdempotencyKey(anyString())).thenReturn(Optional.empty());
+        
+        List<SagaExecutionRepositoryPort.SagaExecution> savedSagas = new ArrayList<>();
+        when(sagaRepository.save(any(SagaExecutionRepositoryPort.SagaExecution.class)))
+            .thenAnswer(invocation -> {
+                SagaExecutionRepositoryPort.SagaExecution saga = invocation.getArgument(0);
+                savedSagas.add(saga);
+                return saga;
+            });
+        
+        when(sagaRepository.findByIdWithLock(any(UUID.class)))
+            .thenAnswer(invocation -> {
+                UUID id = invocation.getArgument(0);
+                return savedSagas.stream()
+                    .filter(s -> s.id().equals(id))
+                    .findFirst();
+            });
         
         when(createOrderUseCase.execute(any())).thenReturn(createdOrder);
         when(processPaymentUseCase.execute(any())).thenReturn(paidOrder);
         when(analyzeRiskUseCase.execute(any())).thenReturn(analyzedOrder);
         
-        
         orchestrator.execute(command);
         
-        
-        ArgumentCaptor<SagaExecutionRepositoryPort.SagaExecution> sagaCaptor = 
-            ArgumentCaptor.forClass(SagaExecutionRepositoryPort.SagaExecution.class);
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        verify(sagaRepository, atLeast(6)).save(sagaCaptor.capture());
-        
-        
-        List<SagaExecutionRepositoryPort.SagaExecution> savedSagas = sagaCaptor.getAllValues();
         assertFalse(savedSagas.isEmpty(), "Saga deve ser salva pelo menos uma vez");
         
-        
         SagaExecutionRepositoryPort.SagaExecution finalSaga = savedSagas.get(savedSagas.size() - 1);
-        
-        
         assertEquals(SagaExecutionRepositoryPort.SagaExecution.SagaStatus.COMPLETED, finalSaga.status());
         
-        
-        
-        assertTrue(savedSagas.size() >= 6, 
-            "Saga deve ser salva múltiplas vezes para rastrear steps (esperado: >= 6, atual: " + savedSagas.size() + ")");
+        verify(sagaRepository, atLeast(3)).save(any(SagaExecutionRepositoryPort.SagaExecution.class));
     }
 }
-

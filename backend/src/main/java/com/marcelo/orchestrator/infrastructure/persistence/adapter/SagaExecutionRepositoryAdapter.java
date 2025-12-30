@@ -79,6 +79,14 @@ public class SagaExecutionRepositoryAdapter implements SagaExecutionRepositoryPo
             .map(this::toDomain);
     }
     
+    @Override
+    public Optional<SagaExecutionRepositoryPort.SagaExecution> findByIdWithLock(UUID id) {
+        log.debug("Finding saga execution by ID with lock: {}", id);
+        
+        return jpaSagaExecutionRepository.findByIdWithLock(id)
+            .map(this::toDomain);
+    }
+    
     
     private SagaExecutionEntity toEntity(SagaExecutionRepositoryPort.SagaExecution sagaExecution) {
         SagaExecutionEntity.SagaStatus jpaStatus = mapToJpaStatus(sagaExecution.status());
@@ -92,6 +100,7 @@ public class SagaExecutionRepositoryAdapter implements SagaExecutionRepositoryPo
             .errorMessage(sagaExecution.errorMessage())
             .startedAt(sagaExecution.startedAt())
             .completedAt(sagaExecution.completedAt())
+            .timeoutAt(sagaExecution.timeoutAt())
             .durationMs(sagaExecution.durationMs())
             .build();
         
@@ -125,6 +134,7 @@ public class SagaExecutionRepositoryAdapter implements SagaExecutionRepositoryPo
             entity.getErrorMessage(),
             entity.getStartedAt(),
             entity.getCompletedAt(),
+            entity.getTimeoutAt(),
             entity.getDurationMs(),
             steps
         );

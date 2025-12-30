@@ -17,6 +17,8 @@ public interface SagaExecutionRepositoryPort {
     List<SagaExecution> findByStatus(SagaExecution.SagaStatus status);
 
     Optional<SagaExecution> findByIdempotencyKey(String idempotencyKey);
+    
+    Optional<SagaExecution> findByIdWithLock(UUID id);
 
     record SagaExecution(
         UUID id,
@@ -27,6 +29,7 @@ public interface SagaExecutionRepositoryPort {
         String errorMessage,
         java.time.LocalDateTime startedAt,
         java.time.LocalDateTime completedAt,
+        java.time.LocalDateTime timeoutAt,
         Long durationMs,
         List<SagaStep> steps
     ) {
