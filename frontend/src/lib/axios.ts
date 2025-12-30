@@ -14,21 +14,21 @@ export const apiClient: AxiosInstance = axios.create({
 
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-      const logData: Record<string, unknown> = {
-        method: config.method?.toUpperCase(),
-        url: config.url,
-        baseURL: config.baseURL,
-      };
+    const logData: Record<string, unknown> = {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+    };
 
-      if (config.data) {
-        logData.data = config.data;
-      }
+    if (config.data) {
+      logData.data = config.data;
+    }
 
-      if (config.params) {
-        logData.params = config.params;
-      }
+    if (config.params) {
+      logData.params = config.params;
+    }
 
-      logger.log('API Request', logData);
+    logger.log('API Request', logData);
 
     return config;
   },

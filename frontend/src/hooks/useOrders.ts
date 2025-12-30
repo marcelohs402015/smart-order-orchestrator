@@ -20,24 +20,24 @@ export const useOrders = (
   const fetchOrders = useOrderStore((state) => state.fetchOrders);
   const clearError = useOrderStore((state) => state.clearError);
 
-  const refetch = useCallback(
+  useEffect(() => {
+    if (autoFetch) {
+      fetchOrders(initialStatus);
+    }
+  }, [autoFetch, initialStatus, fetchOrders]);
+
+  const handleRefetch = useCallback(
     (status?: OrderStatus) => {
       return fetchOrders(status);
     },
     [fetchOrders]
   );
 
-  useEffect(() => {
-    if (autoFetch) {
-      refetch(initialStatus);
-    }
-  }, [autoFetch, initialStatus, refetch]);
-
   return {
     orders,
     loading,
     error,
-    refetch,
+    refetch: handleRefetch,
     clearError,
   };
 };

@@ -22,18 +22,18 @@ export const useOrder = (
   const refreshPaymentStatus = useOrderStore((state) => state.refreshPaymentStatus);
   const clearError = useOrderStore((state) => state.clearError);
 
-  const refetch = useCallback(
+  useEffect(() => {
+    if (autoFetch && orderId) {
+      fetchOrderById(orderId);
+    }
+  }, [autoFetch, orderId, fetchOrderById]);
+
+  const handleRefetch = useCallback(
     (id: string) => {
       return fetchOrderById(id);
     },
     [fetchOrderById]
   );
-
-  useEffect(() => {
-    if (autoFetch && orderId) {
-      refetch(orderId);
-    }
-  }, [autoFetch, orderId, refetch]);
 
   const handleRefreshPaymentStatus = useCallback(
     (id: string) => {
@@ -46,7 +46,7 @@ export const useOrder = (
     order: currentOrder,
     loading,
     error,
-    refetch,
+    refetch: handleRefetch,
     refreshPaymentStatus: handleRefreshPaymentStatus,
     clearError,
   };

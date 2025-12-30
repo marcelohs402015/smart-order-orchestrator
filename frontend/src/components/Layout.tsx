@@ -27,7 +27,7 @@ export const Layout = ({ children }: LayoutProps) => {
                 </h1>
               </Link>
             </div>
-            <nav className="flex space-x-4">
+            <nav className="flex space-x-4" aria-label="Navegação principal">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
@@ -40,6 +40,7 @@ export const Layout = ({ children }: LayoutProps) => {
                         ? 'bg-blue-100 text-blue-700'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                     )}
+                    aria-current={isActive ? 'page' : undefined}
                   >
                     {item.name}
                   </Link>
