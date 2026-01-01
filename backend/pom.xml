@@ -42,7 +42,7 @@
         <!-- Versão 10.10.0: Suporte completo para PostgreSQL 16+ e melhorias de performance -->
         <flyway.version>10.10.0</flyway.version>
 
-        <testcontainers.version>1.19.8</testcontainers.version>
+        <testcontainers.version>1.20.3</testcontainers.version>
     </properties>
     
     <dependencies>
@@ -245,6 +245,16 @@
                             <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <environmentVariables>
+                        <DOCKER_HOST>tcp://localhost:2375</DOCKER_HOST>
+                    </environmentVariables>
                 </configuration>
             </plugin>
         </plugins>
