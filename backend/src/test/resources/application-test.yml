@@ -1,0 +1,96 @@
+spring:
+  application:
+    name: smart-order-orchestrator-test
+
+  threads:
+    virtual:
+      enabled: true
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    clean-disabled: false
+
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 1
+
+abacatepay:
+  api:
+    base-url: http://localhost:8080
+    key: test-key
+
+features:
+  riskAnalysis:
+    enabled: false
+
+openai:
+  api:
+    base-url: http://localhost:8080
+    key: test-key
+    model: gpt-3.5-turbo
+    temperature: 0.0
+    max-tokens: 10
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      paymentGateway:
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5s
+      riskAnalysis:
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5s
+
+  retry:
+    instances:
+      paymentGateway:
+        maxAttempts: 2
+        waitDuration: 500ms
+      riskAnalysis:
+        maxAttempts: 2
+        waitDuration: 500ms
+
+app:
+  message:
+    broker:
+      type: KAFKA
+      kafka:
+        topics:
+          order-created: order-created
+          payment-processed: payment-processed
+          saga-completed: saga-completed
+          saga-failed: saga-failed
+
+logging:
+  level:
+    com.marcelo.orchestrator: INFO
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+    org.testcontainers: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+server:
+  port: 0

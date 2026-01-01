@@ -29,18 +29,20 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        
+
         <!-- Lombok: Redução de boilerplate (getters, setters, builders) mantendo legibilidade e performance -->
         <!-- Versão 1.18.34: Suporte completo Java 21, correções de compatibilidade com annotation processors -->
         <lombok.version>1.18.34</lombok.version>
-        
+
         <!-- Resilience4j: Circuit Breaker, Retry e Fallback para resiliência em integrações externas -->
         <!-- Versão 2.2.0: Melhorias de performance e compatibilidade com Spring Boot 3.3+ -->
         <resilience4j.version>2.2.0</resilience4j.version>
-        
+
         <!-- Flyway: Migrations de banco de dados versionadas -->
         <!-- Versão 10.10.0: Suporte completo para PostgreSQL 16+ e melhorias de performance -->
         <flyway.version>10.10.0</flyway.version>
+
+        <testcontainers.version>1.19.8</testcontainers.version>
     </properties>
     
     <dependencies>
@@ -163,6 +165,46 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>kafka</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
