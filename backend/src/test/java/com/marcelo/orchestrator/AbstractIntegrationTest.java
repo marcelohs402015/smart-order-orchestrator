@@ -4,6 +4,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -22,6 +23,12 @@ public abstract class AbstractIntegrationTest {
             .withUsername("test")
             .withPassword("test");
 
+    @Container
+    protected static final KafkaContainer KAFKA = new KafkaContainer(
+            DockerImageName.parse("apache/kafka:3.7.0")
+                    .asCompatibleSubstituteFor("confluentinc/cp-kafka")
+    );
+
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
@@ -29,9 +36,9 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
 
-        registry.add("spring.kafka.bootstrap-servers", () -> "localhost:9092");
-        registry.add("spring.kafka.producer.bootstrap-servers", () -> "localhost:9092");
-        registry.add("spring.kafka.consumer.bootstrap-servers", () -> "localhost:9092");
+        registry.add("spring.kafka.bootstrap-servers", KAFKA::getBootstrapServers);
+        registry.add("spring.kafka.producer.bootstrap-servers", KAFKA::getBootstrapServers);
+        registry.add("spring.kafka.consumer.bootstrap-servers", KAFKA::getBootstrapServers);
 
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
         registry.add("spring.flyway.enabled", () -> "true");
