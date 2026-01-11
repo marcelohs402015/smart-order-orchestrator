@@ -9,6 +9,9 @@ public record CreateOrderResponse(
     @JsonProperty("success")
     boolean success,
     
+    @JsonProperty("inProgress")
+    boolean inProgress,
+    
     @JsonProperty("order")
     OrderResponse order,
     
@@ -20,16 +23,16 @@ public record CreateOrderResponse(
 ) {
     
     public static CreateOrderResponse success(OrderResponse order, UUID sagaExecutionId) {
-        return new CreateOrderResponse(true, order, sagaExecutionId, null);
+        return new CreateOrderResponse(true, false, order, sagaExecutionId, null);
     }
     
     
     public static CreateOrderResponse failed(OrderResponse order, UUID sagaExecutionId, String errorMessage) {
-        return new CreateOrderResponse(false, order, sagaExecutionId, errorMessage);
+        return new CreateOrderResponse(false, false, order, sagaExecutionId, errorMessage);
     }
     
     
     public static CreateOrderResponse inProgress(OrderResponse order, UUID sagaExecutionId, String message) {
-        return new CreateOrderResponse(false, order, sagaExecutionId, message);
+        return new CreateOrderResponse(false, true, order, sagaExecutionId, message);
     }
 }
