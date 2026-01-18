@@ -30,46 +30,30 @@ export const createOrder = async (
 };
 
 export const getOrderById = async (id: string): Promise<OrderResponse> => {
-  try {
-    const response = await apiClient.get<OrderResponse>(`/orders/${id}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await apiClient.get<OrderResponse>(`/orders/${id}`);
+  return response.data;
 };
 
 export const getOrderByNumber = async (
   orderNumber: string
 ): Promise<OrderResponse> => {
-  try {
-    const response = await apiClient.get<OrderResponse>(
-      `/orders/number/${orderNumber}`
-    );
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await apiClient.get<OrderResponse>(
+    `/orders/number/${orderNumber}`
+  );
+  return response.data;
 };
 
 export const getAllOrders = async (status?: OrderStatus): Promise<OrderResponse[]> => {
-  try {
-    const params = status ? { status } : {};
-    const response = await apiClient.get<OrderResponse[]>('/orders', { params });
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const params = status ? { status } : {};
+  const response = await apiClient.get<OrderResponse[]>('/orders', { params });
+  return response.data;
 };
 
 export const refreshPaymentStatus = async (orderId: string): Promise<OrderResponse> => {
-  try {
-    const response = await apiClient.post<OrderResponse>(
-      `/payments/orders/${orderId}/refresh-status`
-    );
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await apiClient.post<OrderResponse>(
+    `/payments/orders/${orderId}/refresh-status`
+  );
+  return response.data;
 };
 
 export class OrderServiceError extends Error {
