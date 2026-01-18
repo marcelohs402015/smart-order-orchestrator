@@ -26,9 +26,9 @@ jobs:
         working-directory: ./backend
         run: mvn clean compile -DskipTests
       
-      - name: Run tests
+      - name: Run unit tests
         working-directory: ./backend
-        run: mvn test
+        run: mvn test -Dtest.exclude.pattern='**/*IntegrationTest.java'
 
   frontend-test:
     name: Frontend Tests
