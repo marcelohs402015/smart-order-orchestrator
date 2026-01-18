@@ -1,12 +1,5 @@
 name: CI
 
-# ============================================================================
-# Continuous Integration Pipeline
-# ============================================================================
-# Este workflow demonstra práticas de CI/CD para garantir qualidade de código.
-# Executa a cada push e pull request, validando compilação e testes.
-# ============================================================================
-
 on:
   push:
     branches: [ main, develop ]
@@ -14,77 +7,52 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  # ==========================================================================
-  # Job: Build and Test
-  # ==========================================================================
-  # Compila o projeto Java 21 e executa testes unitários.
-  # Utiliza cache do Maven para otimizar performance entre execuções.
-  # ==========================================================================
-  build-and-test:
-    name: Build and Test
+  backend-test:
+    name: Backend Tests
     runs-on: ubuntu-latest
     
     steps:
-      # ----------------------------------------------------------------------
-      # Checkout: Obtém o código do repositório
-      # ----------------------------------------------------------------------
       - name: Checkout code
         uses: actions/checkout@v4
       
-      # ----------------------------------------------------------------------
-      # Setup Java 21: Configura ambiente Java usando Temurin (OpenJDK)
-      # ----------------------------------------------------------------------
-      # Temurin é a distribuição OpenJDK recomendada pela Eclipse Foundation.
-      # Cache do Maven é habilitado automaticamente para acelerar builds.
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution: 'temurin'  # OpenJDK da Eclipse Foundation
-          cache: 'maven'  # Cache automático de dependências Maven (~/.m2)
+          distribution: 'temurin'
+          cache: 'maven'
       
-      # ----------------------------------------------------------------------
-      # Build: Compila o projeto
-      # ----------------------------------------------------------------------
-      # Compila o código Java, processa annotation processors (Lombok, MapStruct),
-      # e valida que não há erros de compilação.
-      # Fail-fast: Se compilação falhar, pipeline para aqui.
       - name: Build with Maven
+        working-directory: ./backend
         run: mvn clean compile -DskipTests
       
-      # ----------------------------------------------------------------------
-      # Tests: Executa testes unitários
-      # ----------------------------------------------------------------------
-      # Executa todos os testes unitários do projeto.
-      # Se algum teste falhar, o pipeline falha e notifica.
-      # Relatórios de cobertura podem ser adicionados aqui (JaCoCo).
       - name: Run tests
+        working-directory: ./backend
         run: mvn test
+
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       
-      # ----------------------------------------------------------------------
-      # (Opcional) Upload Test Results
-      # ----------------------------------------------------------------------
-      # Descomente para fazer upload de relatórios de teste:
-      # - name: Upload test results
-      #   uses: actions/upload-artifact@v3
-      #   if: always()
-      #   with:
-      #     name: test-results
-      #     path: target/surefire-reports/
-
-# ============================================================================
-# Boas Práticas de CI/CD Implementadas:
-# ============================================================================
-# 1. Fail-Fast: Pipeline para na primeira falha para feedback rápido
-# 2. Cache: Dependências Maven são cacheadas entre execuções
-# 3. Isolamento: Cada job roda em container limpo (reprodutibilidade)
-# 4. Triggers: Executa em push e PR para validação contínua
-# 5. Simplicidade: Pipeline focado em compilação e testes (YAGNI)
-# 
-# Melhorias Futuras (quando necessário):
-# - Adicionar análise estática de código (SonarQube, SpotBugs)
-# - Adicionar cobertura de testes (JaCoCo)
-# - Adicionar build de imagem Docker
-# - Adicionar deploy automático em ambientes de staging
-# ============================================================================
-
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ./frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+      
+      - name: Run linter
+        working-directory: ./frontend
+        run: npm run lint
+      
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
